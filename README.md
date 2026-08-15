@@ -233,5 +233,5 @@ contact exchange on acceptance, offer expiry. Then drop-spot photo upload
 | Variable | Without it | Get it from |
 | --- | --- | --- |
 | `GOOGLE_MAPS_KEY` | Address lookup falls back to OpenStreetMap — fine for testing, patchy on new estates and units | Google Cloud Console (Geocoding API) |
-| `MAPTILER_KEY` | Map uses raw OSM raster tiles, whose usage policy **does not permit production traffic** | maptiler.com |
+| `MAPTILER_KEY` | *Optional.* Map uses OpenFreeMap — free vector tiles, no key, fine for production. A key only buys a paid CDN with an uptime commitment | maptiler.com |
 | `TWILIO_*` | No SMS, so the Phase 2 accept loop is email-only | twilio.com |

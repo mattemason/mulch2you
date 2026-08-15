@@ -7,7 +7,6 @@ import {
   Map as MapLibreMap,
   Marker,
   NavigationControl,
-  type StyleSpecification,
 } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { NearbyListing } from "@/lib/db/queries";
@@ -43,6 +42,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const [listings, setListings] = useState<NearbyListing[]>([]);
   const [selected, setSelected] = useState<NearbyListing | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   const locating = centre === null;
   const effectiveCentre = centre ?? FALLBACK_CENTRE;
@@ -121,23 +121,54 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
 
   /* --- map ----------------------------------------------------------------- */
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
+    const container = containerRef.current;
+    if (!container || mapRef.current) return;
 
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: buildStyle(maptilerKey),
-      center: [FALLBACK_CENTRE.lng, FALLBACK_CENTRE.lat],
-      zoom: 11,
-      attributionControl: { compact: true },
-    });
+    let map: MapLibreMap;
+    try {
+      map = new MapLibreMap({
+        container,
+        style: buildStyle(maptilerKey),
+        center: [FALLBACK_CENTRE.lng, FALLBACK_CENTRE.lat],
+        zoom: 11,
+        attributionControl: { compact: true },
+      });
+    } catch (err) {
+      // WebGL unavailable, or a style that won't parse. Without this the page
+      // renders the controls over a blank white box and says nothing.
+      // Deferred so the state change lands after this effect rather than
+      // cascading a render from inside it.
+      console.error("map failed to initialise", err);
+      queueMicrotask(() => setMapError("The map couldn't start on this device."));
+      return;
+    }
+
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
     map.addControl(
       new GeolocateControl({ trackUserLocation: true, showAccuracyCircle: true }),
       "top-right",
     );
+
+    // Tile or style failures arrive here rather than as thrown errors, so a
+    // blocked CDN would otherwise be silent.
+    map.on("error", (e) => {
+      console.error("map error", e.error ?? e);
+      setMapError("Map tiles didn't load. Pins still work — try reloading.");
+    });
+    map.on("load", () => {
+      setMapError(null);
+      map.resize();
+    });
+
+    // The container is sized by flexbox, which can settle after the map reads
+    // its dimensions — a map built at zero height stays at zero height.
+    const observer = new ResizeObserver(() => map.resize());
+    observer.observe(container);
+
     mapRef.current = map;
 
     return () => {
+      observer.disconnect();
       map.remove();
       mapRef.current = null;
     };
@@ -173,7 +204,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
 
   /* --- render -------------------------------------------------------------- */
   return (
-    <div className="relative flex-1">
+    <div className="relative flex-1 min-h-[60vh]">
       <div ref={containerRef} className="absolute inset-0" />
 
       <FilterBar
@@ -181,7 +212,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
         onChange={applyFilters}
         count={listings.length}
         locating={locating}
-        error={error}
+        error={error ?? mapError}
       />
 
       {selected && <PinSheet listing={selected} onClose={() => setSelected(null)} />}
@@ -385,26 +416,16 @@ function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () =>
 /* -------------------------------------------------------------------------- */
 
 /**
- * MapTiler when a key is configured, plain OSM raster otherwise so the map
- * works before anyone signs up for anything. OSM's tile policy doesn't permit
- * production traffic, so a key is needed before launch — not before testing.
+ * OpenFreeMap by default: free vector tiles, no key, no signup, and — unlike
+ * raw OpenStreetMap raster tiles — explicitly fine for production traffic.
+ * The OSM tile usage policy forbids exactly this kind of app, so shipping on
+ * it was borrowed time.
+ *
+ * MapTiler still wins if a key is set: same rendering, but a paid CDN with an
+ * uptime commitment behind it.
  */
-function buildStyle(maptilerKey: string | null): string | StyleSpecification {
-  if (maptilerKey) {
-    return `https://api.maptiler.com/maps/streets-v2/style.json?key=${maptilerKey}`;
-  }
-
-  return {
-    version: 8,
-    sources: {
-      osm: {
-        type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      },
-    },
-    layers: [{ id: "osm", type: "raster", source: "osm" }],
-  };
+function buildStyle(maptilerKey: string | null): string {
+  return maptilerKey
+    ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${maptilerKey}`
+    : "https://tiles.openfreemap.org/styles/liberty";
 }
