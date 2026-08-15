@@ -66,7 +66,7 @@ const SITES = [
   },
 ];
 
-export function MapPreview() {
+export function MapPreview({ supplierHref }: { supplierHref: string }) {
   const [active, setActive] = useState<string | null>(null);
 
   return (
@@ -234,7 +234,7 @@ export function MapPreview() {
               An illustration — real drop sites are only visible to approved tree services,
               because every pin is someone&apos;s home.
             </p>
-            <Link href="/signin?role=supplier" className="btn btn-ghost btn-block" style={{ marginTop: 14 }}>
+            <Link href={supplierHref} className="btn btn-ghost btn-block" style={{ marginTop: 14 }}>
               Open the real map
             </Link>
           </div>

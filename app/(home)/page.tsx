@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, receiverHref, supplierHref } from "@/lib/session";
 import { VOLUME_TIERS, VOLUME_TIER_KEYS, formatPrice } from "@/lib/listing-options";
 import { SiteHeader } from "./site-header";
 import { HowItWorks } from "./how-it-works";
@@ -19,6 +19,10 @@ export const metadata: Metadata = {
 export default async function HomePage() {
   const user = await getCurrentUser();
   const signedIn = Boolean(user);
+  // Resolved once: a signed-in visitor should never be shown a sign-in form by
+  // a button that says "put my pin on the map".
+  const receiverTo = receiverHref(user);
+  const supplierTo = supplierHref(user);
 
   return (
     <div className="marketing">
@@ -36,7 +40,7 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <SiteHeader signedIn={signedIn} />
+      <SiteHeader signedIn={signedIn} receiverHref={receiverTo} supplierHref={supplierTo} />
 
       {/* ---------------- hero ---------------- */}
       <section className="hero">
@@ -80,7 +84,7 @@ export default async function HomePage() {
                 <Bullet>Nothing to pay until it&apos;s tipped and you&apos;ve confirmed</Bullet>
                 <Bullet>Set species you won&apos;t take, and where the truck tips</Bullet>
               </ul>
-              <Link href="/signin?role=receiver" className="btn btn-green btn-lg btn-block">
+              <Link href={receiverTo} className="btn btn-green btn-lg btn-block">
                 Put my pin on the map <Arrow />
               </Link>
               <div className="door-foot">Listing is free and takes about 90 seconds.</div>
@@ -109,7 +113,7 @@ export default async function HomePage() {
                 <Bullet>Live map filtered to truck size, access and clearance</Bullet>
                 <Bullet>Claim a pre-approved pin and go — no phone call needed</Bullet>
               </ul>
-              <Link href="/signin?role=supplier" className="btn btn-ink btn-lg btn-block">
+              <Link href={supplierTo} className="btn btn-ink btn-lg btn-block">
                 Find drop sites near me <Arrow />
               </Link>
               <div className="door-foot">No subscription, no listing fee, no lock-in.</div>
@@ -124,7 +128,7 @@ export default async function HomePage() {
       {/* <StatsBand /> */}
 
       <HowItWorks />
-      <MapPreview />
+      <MapPreview supplierHref={supplierTo} />
 
       {/* ---------------- benefits ---------------- */}
       <section>
@@ -200,7 +204,7 @@ export default async function HomePage() {
                   </div>
                   <p>{t.blurb}</p>
                   <Link
-                    href="/signin?role=receiver"
+                    href={receiverTo}
                     className={`btn btn-block ${feature ? "btn-green" : "btn-ghost"}`}
                   >
                     Choose this
@@ -227,7 +231,7 @@ export default async function HomePage() {
                 <ArbPoint>Pins pre-approved for instant drop — claim and go</ArbPoint>
                 <ArbPoint>Every site vetted for truck access before you commit</ArbPoint>
               </ul>
-              <Link href="/signin?role=supplier" className="btn btn-green btn-block">
+              <Link href={supplierTo} className="btn btn-green btn-block">
                 Create a free arborist account
               </Link>
             </div>
@@ -250,10 +254,10 @@ export default async function HomePage() {
             your driveway.
           </p>
           <div className="closing-btns">
-            <Link href="/signin?role=receiver" className="btn btn-white btn-lg">
+            <Link href={receiverTo} className="btn btn-white btn-lg">
               Put my pin on the map <Arrow />
             </Link>
-            <Link href="/signin?role=supplier" className="btn btn-outline-white btn-lg">
+            <Link href={supplierTo} className="btn btn-outline-white btn-lg">
               I&apos;m an arborist
             </Link>
           </div>
@@ -286,7 +290,7 @@ export default async function HomePage() {
             <FooterCol
               title="For homeowners"
               links={[
-                { href: "/signin?role=receiver", label: "List your driveway" },
+                { href: receiverTo, label: "List your driveway" },
                 { href: "#pricing", label: "Load sizes & prices" },
                 { href: "#how", label: "How delivery works" },
                 { href: "#faq", label: "FAQ" },
@@ -295,7 +299,7 @@ export default async function HomePage() {
             <FooterCol
               title="For arborists"
               links={[
-                { href: "/signin?role=supplier", label: "Find drop sites" },
+                { href: supplierTo, label: "Find drop sites" },
                 { href: "#arborist-pricing", label: "What it costs you" },
                 { href: "#how", label: "How claiming works" },
               ]}

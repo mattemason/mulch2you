@@ -46,6 +46,30 @@ export function isApprovedSupplier(user: CurrentUser | null): boolean {
 }
 
 /**
+ * Where the marketing CTAs should actually send this visitor.
+ *
+ * Every public call to action is really "start the thing I came here for", and
+ * for someone already signed in that is never the sign-in page. Computed in
+ * one place because the homepage alone has ten of these buttons, and each one
+ * getting its own guess is how half of them end up wrong.
+ */
+export function receiverHref(user: CurrentUser | null): string {
+  if (!user) return "/signin?role=receiver";
+  if (!user.role) return "/onboarding?role=receiver";
+  // A tree service tapping "I want mulch" is almost certainly exploring, and
+  // createListing would refuse them anyway — the dashboard is the honest landing.
+  return user.role === "receiver" ? "/listings/new" : "/dashboard";
+}
+
+export function supplierHref(user: CurrentUser | null): string {
+  if (!user) return "/signin?role=supplier";
+  if (!user.role) return "/onboarding?role=supplier";
+  if (user.role !== "supplier") return "/dashboard";
+  // Unapproved suppliers can't see the map; the dashboard explains why.
+  return isApprovedSupplier(user) ? "/map" : "/dashboard";
+}
+
+/**
  * Admin is independent of role, so the same person can run the site and also
  * have a listing. Driven by ADMIN_EMAILS rather than a column, because a
  * database flag has no way to grant itself the first time.

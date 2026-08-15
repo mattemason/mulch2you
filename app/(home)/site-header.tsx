@@ -11,7 +11,15 @@ const NAV = [
   { href: "#faq", label: "FAQ" },
 ];
 
-export function SiteHeader({ signedIn }: { signedIn: boolean }) {
+export function SiteHeader({
+  signedIn,
+  receiverHref,
+  supplierHref,
+}: {
+  signedIn: boolean;
+  receiverHref: string;
+  supplierHref: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -31,11 +39,11 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
           </nav>
 
           <div className="nav-actions">
-            <Link href="/signin?role=supplier" className="btn btn-ghost">
+            <Link href={supplierHref} className="btn btn-ghost">
               I&apos;m an arborist
             </Link>
-            <Link href={signedIn ? "/dashboard" : "/signin?role=receiver"} className="btn btn-green">
-              {signedIn ? "Go to dashboard" : "Get mulch delivered"}
+            <Link href={receiverHref} className="btn btn-green">
+              Get mulch delivered
             </Link>
           </div>
 
@@ -61,11 +69,11 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
         <Link href={signedIn ? "/dashboard" : "/signin"}>
           {signedIn ? "Dashboard" : "Log in"}
         </Link>
-        <Link href="/signin?role=receiver" className="btn btn-green btn-block">
+        <Link href={receiverHref} className="btn btn-green btn-block">
           Get mulch delivered
         </Link>
         <Link
-          href="/signin?role=supplier"
+          href={supplierHref}
           className="btn btn-ghost btn-block"
           style={{ marginTop: 10 }}
         >

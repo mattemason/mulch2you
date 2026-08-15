@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
+import { getCurrentUser, receiverHref, supplierHref } from "@/lib/session";
 import { Wordmark } from "@/app/logo";
 
 /**
@@ -21,6 +23,18 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
   const role = typeof params.role === "string" ? params.role : undefined;
   const callbackUrl = typeof params.callbackUrl === "string" ? params.callbackUrl : "/dashboard";
   const error = typeof params.error === "string" ? params.error : undefined;
+
+  // Already signed in? Asking someone to sign in again is a dead end — send
+  // them where the link was trying to take them. Skipped when there's an error
+  // to report, so a failed magic link can still explain itself.
+  if (!error) {
+    const user = await getCurrentUser();
+    if (user) {
+      if (role === "receiver") redirect(receiverHref(user));
+      if (role === "supplier") redirect(supplierHref(user));
+      redirect(callbackUrl);
+    }
+  }
 
   async function sendLink(formData: FormData) {
     "use server";
