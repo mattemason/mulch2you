@@ -1,28 +1,37 @@
-import { Resend } from "resend";
+import { ServerClient } from "postmark";
 import { env, isProd } from "@/lib/env";
 
-const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+const client = env.POSTMARK_SERVER_TOKEN
+  ? new ServerClient(env.POSTMARK_SERVER_TOKEN)
+  : null;
 
 type SendArgs = { to: string; subject: string; html: string; text: string };
 
 export async function sendEmail({ to, subject, html, text }: SendArgs) {
-  if (!resend) {
-    // No key configured — don't fail the request, just make the content
-    // obvious in the dev console so local flows stay testable.
-    if (isProd) throw new Error("RESEND_API_KEY is not set; cannot send email");
+  if (!client) {
+    // No token configured — don't fail the request, just make the content
+    // obvious in the dev console so local flows stay testable. In production
+    // we throw instead: a magic link is a live credential and has no business
+    // being written to a log.
+    if (isProd) throw new Error("POSTMARK_SERVER_TOKEN is not set; cannot send email");
     console.log(`\n📧 [dev email] to=${to}\n   subject: ${subject}\n   ${text}\n`);
     return;
   }
 
-  const { error } = await resend.emails.send({
-    from: env.EMAIL_FROM,
-    to,
-    subject,
-    html,
-    text,
+  const res = await client.sendEmail({
+    From: env.EMAIL_FROM,
+    To: to,
+    Subject: subject,
+    HtmlBody: html,
+    TextBody: text,
+    MessageStream: env.POSTMARK_MESSAGE_STREAM,
   });
 
-  if (error) throw new Error(`Resend failed: ${error.message}`);
+  // Postmark returns 200 with a non-zero ErrorCode for things like an
+  // unconfirmed sender signature or a recipient on the suppression list.
+  if (res.ErrorCode) {
+    throw new Error(`Postmark ${res.ErrorCode}: ${res.Message}`);
+  }
 }
 
 export async function sendMagicLinkEmail({ to, url }: { to: string; url: string }) {

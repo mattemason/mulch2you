@@ -1,10 +1,30 @@
 import NextAuth from "next-auth";
-import Resend from "next-auth/providers/resend";
+import type { EmailConfig } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
 import { env, isProd } from "@/lib/env";
 import { sendMagicLinkEmail } from "@/lib/email";
+
+/**
+ * Our own email provider rather than a bundled one, so the transport (Postmark)
+ * and the template live in lib/email.ts and swapping either doesn't touch auth.
+ * Auth.js only needs the shape: an "email" provider whose sendVerificationRequest
+ * delivers the URL. Token generation and storage stay with the adapter.
+ */
+const emailProvider: EmailConfig = {
+  id: "email",
+  type: "email",
+  name: "Email",
+  from: env.EMAIL_FROM,
+  // 24h is too long for a live credential sitting in an inbox; 30 min is still
+  // forgiving of someone who taps the link after finishing a job.
+  maxAge: 60 * 30,
+  options: {},
+  async sendVerificationRequest({ identifier, url }) {
+    await sendMagicLinkEmail({ to: identifier, url });
+  },
+};
 
 /**
  * Magic links only. The supply side of this marketplace is tradies tapping on
@@ -26,18 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verifyRequest: "/signin/check-email",
     error: "/signin",
   },
-  providers: [
-    Resend({
-      apiKey: env.RESEND_API_KEY ?? "dev-no-key",
-      from: env.EMAIL_FROM,
-      // 24h is too long for a credential in an inbox; 30 min is still forgiving
-      // of someone who taps the link after finishing a job.
-      maxAge: 60 * 30,
-      sendVerificationRequest: async ({ identifier, url }) => {
-        await sendMagicLinkEmail({ to: identifier, url });
-      },
-    }),
-  ],
+  providers: [emailProvider],
   callbacks: {
     jwt({ token, user }) {
       if (user) token.sub = user.id;

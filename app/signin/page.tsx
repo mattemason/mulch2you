@@ -13,7 +13,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
     // Role is carried through the sign-in round trip so a first-time user lands
     // on the right half of onboarding instead of being asked twice.
     const target = role ? `/onboarding?role=${encodeURIComponent(role)}` : callbackUrl;
-    await signIn("resend", { email, redirectTo: target });
+    await signIn("email", { email, redirectTo: target });
   }
 
   return (

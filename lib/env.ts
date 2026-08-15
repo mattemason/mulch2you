@@ -10,9 +10,12 @@ const schema = z.object({
   AUTH_SECRET: z.string().min(1),
   AUTH_URL: z.string().url().optional(),
 
-  // Email (magic links + drop notifications)
-  RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("Mulch2You <onboarding@resend.dev>"),
+  // Email (magic links + drop notifications).
+  // POSTMARK_SERVER_TOKEN is the per-server token, not the account token.
+  POSTMARK_SERVER_TOKEN: z.string().optional(),
+  POSTMARK_MESSAGE_STREAM: z.string().default("outbound"),
+  // Must match a confirmed Postmark sender signature, or sending 400s.
+  EMAIL_FROM: z.string().default("hello@example.com"),
 
   // Maps — MapTiler renders tiles, Google resolves AU addresses
   MAPTILER_KEY: z.string().optional(),

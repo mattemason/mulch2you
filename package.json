@@ -22,9 +22,9 @@
     "next": "16.3.1",
     "next-auth": "^5.0.0-beta.32",
     "pg": "^8.23.0",
+    "postmark": "^5.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "resend": "^6.20.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

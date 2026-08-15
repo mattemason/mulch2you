@@ -211,13 +211,13 @@ limit 200;
 | Auth | **Auth.js v5, email magic link** | Tradies on phones will not manage a password. Add SMS OTP for supplier phone verification |
 | Map render | **MapLibre GL JS + MapTiler tiles** | Tiles are the high-volume cost; free tier covers launch. Leaflet + OSM is an even cheaper fallback |
 | Address entry | **Google Places Autocomplete (AU-restricted)** | Best Australian address data. Called once per listing, so cost is trivial |
-| Email | **Resend** | Good DX, React Email templates |
+| Email | **Postmark** | Strong transactional deliverability; separate streams keep sign-in links out of any bulk reputation |
 | SMS | **Twilio** (AU alphanumeric sender) | The accept loop depends on it. Budget ~5c/msg |
 | Photos | **Cloudflare R2** presigned uploads | Railway has no durable disk by default |
 | Cron | Railway cron service → signed internal endpoint | Offer expiry, 30-day staleness pings, digests |
 | Errors | Sentry | |
 
-Env vars to plan for: `DATABASE_URL`, `AUTH_SECRET`, `RESEND_API_KEY`, `TWILIO_*`,
+Env vars to plan for: `DATABASE_URL`, `AUTH_SECRET`, `POSTMARK_SERVER_TOKEN`, `TWILIO_*`,
 `GOOGLE_MAPS_KEY` (server-side, referrer-restricted), `MAPTILER_KEY`, `R2_*`, `CRON_SECRET`.
 
 Ship it as a **PWA** (manifest + install prompt). A lopper who adds it to their home screen
@@ -266,10 +266,25 @@ given metro area. Ring them. The pitch is money, not sustainability: *"how much 
 a week tipping green waste, and how long does the round trip take?"* Green-waste tipping plus
 driver time is real cost — quantify it in their terms and the app sells itself.
 
-**Monetisation (not in v1).** Launch free both sides to build liquidity. The natural model
-later is a small per-successful-drop fee on suppliers, since they're the ones saving money.
-An alternative is a paid "priority listing" for gardeners who want to jump the queue. Do not
-charge anyone until drops are happening weekly without your intervention.
+**Monetisation — the receiver pays.** Decided: gardeners pay a nominal fee scaled to how
+much mulch they want; arborists tip for free. Three constraints follow from that choice:
+
+- **Charge on delivery, not on listing.** Listing must stay free, or the map goes thin and
+  suppliers stop opening the app — and pin density is the entire product. Take payment
+  details up front if you like, but only capture once the receiver confirms the load
+  arrived. A free marketplace can shrug off "no crew came this week". A prepaid one owes
+  refunds and support, on the one thing you can't control: whether a truck shows up.
+- **Price the tier requested, never the volume delivered.** Nobody can verify how many
+  cubic metres actually hit the driveway, and you do not want to arbitrate that argument.
+  Charge against the band the receiver chose (up to 3 m³ / up to 6 m³ / full truck).
+- **Sell the introduction, not the mulch.** Invoice it as a matching or delivery fee. If
+  the fee reads as the price of goods, Australian Consumer Law guarantees attach to the
+  material itself, and every load of weed-seeded or diseased chip becomes your liability.
+  This is a wording decision in the checkout and the terms, and it is worth getting right
+  before the first dollar is taken.
+
+Charging receivers also has a quiet upside: a paid listing is a serious listing, which is
+the cheapest defence there is against the stale-pin problem.
 
 ---
 

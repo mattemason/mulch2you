@@ -15,7 +15,7 @@ listings store two sets of coordinates and why suppliers are approved by hand.
 | Styling | Tailwind v4 |
 | Database | Postgres via Drizzle ORM (`pg` driver) |
 | Auth | Auth.js v5, email magic links (no passwords) |
-| Email | Resend |
+| Email | Postmark |
 | Hosting | Railway |
 
 ## Local setup
@@ -37,8 +37,21 @@ npm run db:migrate       # apply migrations in ./drizzle
 npm run dev
 ```
 
-Without `RESEND_API_KEY`, magic-link emails are printed to the server console
-instead of sent — enough to sign in locally.
+Without `POSTMARK_SERVER_TOKEN`, magic-link emails are printed to the server
+console instead of sent — enough to sign in locally. Production throws instead,
+since a magic link is a live credential and shouldn't be written to a log.
+
+### Postmark setup
+
+1. Create a Postmark account and a **Server** (transactional).
+2. **Sender Signatures** → add the address you'll send from and click the
+   confirmation email. `EMAIL_FROM` must match it exactly or every send fails.
+3. **Servers → your server → API Tokens** → copy the *server* token (not the
+   account token) into `POSTMARK_SERVER_TOKEN`.
+
+New Postmark accounts are approval-limited: until approved, you can generally
+only send to addresses on the same domain as your confirmed sender signature.
+That's enough to test your own login; request approval before real signups.
 
 ## Scripts
 
@@ -59,7 +72,7 @@ it → `db:migrate`. Don't use `db:push` against production.
 1. New project → **Deploy from GitHub repo** → this repo.
 2. Add a **Postgres** service. Railway injects `DATABASE_URL` automatically.
 3. Set service variables from `.env.example` — at minimum `AUTH_SECRET`,
-   plus `RESEND_API_KEY` and `EMAIL_FROM` for real emails.
+   plus `POSTMARK_SERVER_TOKEN` and `EMAIL_FROM` for real emails.
 4. Generate a public domain. `railway.json` already sets the pre-deploy
    migration, start command and `/api/health` healthcheck.
 
@@ -79,7 +92,7 @@ lib/
   session.ts            getCurrentUser, isApprovedSupplier (role read from DB)
   geo.ts                coordinate fuzzing, distance, bounding box
   phone.ts              AU mobile normalisation to E.164
-  email.ts              Resend wrapper + templates
+  email.ts              Postmark wrapper + templates
 auth.ts                 Auth.js config
 proxy.ts                signed-in check on protected routes
 drizzle/                generated migrations
