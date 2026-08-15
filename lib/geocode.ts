@@ -1,9 +1,7 @@
 import { env } from "@/lib/env";
 
-export type AddressSuggestion = {
-  /** Stable-ish id for React keys. */
-  id: string;
-  /** Street number if the provider knew one. Often absent on rural roads. */
+/** A fully resolved address: what a listing needs to exist. */
+export type ResolvedAddress = {
   streetNumber: string | null;
   street: string;
   suburb: string;
@@ -13,45 +11,189 @@ export type AddressSuggestion = {
   lng: number;
 };
 
-/** Australia's bounding box, west/south/east/north. */
-const AU_BBOX = "112,-44,154,-9";
-
 /**
- * Suggests addresses as the user types.
+ * One row in the suggestion list.
  *
- * Photon rather than Nominatim: Nominatim's usage policy explicitly forbids
- * autocomplete on the public instance, and Photon is built for it — it's
- * fuzzy, so "95 eunumndi noosa road" still finds Eumundi Noosa Road, which is
- * the whole reason to have this.
- *
- * The catch is that OSM house numbers are thin in Australia and, worse,
- * sometimes wrong: asking for 1 Hastings Street returns number 18. So the
- * street number a suggestion carries is only ever a default — the caller keeps
- * whatever the user typed and lets them confirm it. That's safe because we
- * fuzz every pin ~300 m anyway, so street-level coordinates are plenty; what
- * has to be exact is the address text the driver reads.
+ * `resolved` is present when the provider gave us everything up front (Photon
+ * does) and absent when a second lookup is needed (Google Places returns only
+ * a place id until you ask for details). Callers treat it as a cache: resolve
+ * only when it's missing.
  */
-export async function suggestAddresses(query: string): Promise<AddressSuggestion[]> {
-  const q = query.trim();
-  if (q.length < 4) return [];
+export type AddressPrediction = {
+  id: string;
+  primary: string;
+  secondary: string;
+  resolved?: ResolvedAddress;
+};
 
-  return env.GOOGLE_MAPS_KEY ? viaGoogle(q, env.GOOGLE_MAPS_KEY) : viaPhoton(q);
-}
+/** Australia's bounding box, west/south/east/north — used to bias Photon. */
+const AU_BBOX = "112,-44,154,-9";
 
 export function geocoderName(): "Google" | "Photon" {
   return env.GOOGLE_MAPS_KEY ? "Google" : "Photon";
 }
 
 /**
+ * Suggests addresses as the user types.
+ *
+ * Google Places when a key is configured: better Australian data, and crucially
+ * it's designed for partial input, where the Geocoding API expects something
+ * close to a complete address. Photon otherwise — free, no key, and fuzzy
+ * enough that "95 eunumndi noosa road" still finds Eumundi Noosa Road.
+ *
+ * `sessionToken` matters for cost: Google bills an autocomplete session — every
+ * keystroke plus the closing details call — as one unit, rather than billing
+ * each keystroke separately. The caller must reuse one token for a whole typing
+ * session and start a fresh one afterwards.
+ */
+export async function suggestAddresses(
+  query: string,
+  sessionToken?: string,
+): Promise<AddressPrediction[]> {
+  const q = query.trim();
+  if (q.length < 4) return [];
+
+  return env.GOOGLE_MAPS_KEY
+    ? googleAutocomplete(q, env.GOOGLE_MAPS_KEY, sessionToken)
+    : photonSuggest(q);
+}
+
+/**
+ * Turns a prediction id into a full address. Only needed for providers that
+ * don't resolve up front; passing the session token here is what closes the
+ * billing session Google opened during typing.
+ */
+export async function resolveAddress(
+  id: string,
+  sessionToken?: string,
+): Promise<ResolvedAddress | null> {
+  if (!env.GOOGLE_MAPS_KEY) return null;
+  return googlePlaceDetails(id, env.GOOGLE_MAPS_KEY, sessionToken);
+}
+
+/**
  * Pulls a leading street number out of what the user typed — "95 Smith St",
- * "5/95 Smith St", "12a Smith St". Used to keep their number when the
- * geocoder didn't supply one, or supplied a different one.
+ * "5/95 Smith St", "12a Smith St". Used to keep their number when the provider
+ * didn't supply one, which is common on rural roads.
  */
 export function parseStreetNumber(input: string): string | null {
   const m = /^\s*(\d+[a-z]?(?:\s*\/\s*\d+[a-z]?)?)\s+/i.exec(input);
   return m ? m[1].replace(/\s+/g, "") : null;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Google Places (New)                                                        */
+/* -------------------------------------------------------------------------- */
+
+type GoogleAutocompleteResponse = {
+  suggestions?: {
+    placePrediction?: {
+      placeId: string;
+      text?: { text: string };
+      structuredFormat?: { mainText?: { text: string }; secondaryText?: { text: string } };
+    };
+  }[];
+  error?: { message?: string; status?: string };
+};
+
+async function googleAutocomplete(
+  input: string,
+  key: string,
+  sessionToken?: string,
+): Promise<AddressPrediction[]> {
+  const res = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask":
+        "suggestions.placePrediction.placeId,suggestions.placePrediction.text,suggestions.placePrediction.structuredFormat",
+    },
+    body: JSON.stringify({
+      input,
+      includedRegionCodes: ["au"],
+      // Addresses only — no cafés, no parks. A truck is going to a property.
+      includedPrimaryTypes: ["street_address", "premise", "subpremise", "route"],
+      ...(sessionToken ? { sessionToken } : {}),
+    }),
+    cache: "no-store",
+  });
+
+  const data = (await res.json()) as GoogleAutocompleteResponse;
+  if (!res.ok) {
+    throw new Error(
+      `Google Places autocomplete ${res.status}: ${data.error?.message ?? "unknown error"}`,
+    );
+  }
+
+  return (data.suggestions ?? [])
+    .map((s) => s.placePrediction)
+    .filter((p): p is NonNullable<typeof p> => Boolean(p?.placeId))
+    .map((p) => ({
+      id: p.placeId,
+      primary: p.structuredFormat?.mainText?.text ?? p.text?.text ?? "",
+      secondary: (p.structuredFormat?.secondaryText?.text ?? "").replace(/, Australia$/, ""),
+    }))
+    .slice(0, 5);
+}
+
+type GooglePlaceDetails = {
+  location?: { latitude: number; longitude: number };
+  addressComponents?: { longText: string; shortText: string; types: string[] }[];
+  error?: { message?: string };
+};
+
+async function googlePlaceDetails(
+  placeId: string,
+  key: string,
+  sessionToken?: string,
+): Promise<ResolvedAddress | null> {
+  const url = new URL(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`);
+  if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
+
+  const res = await fetch(url, {
+    headers: {
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask": "addressComponents,location",
+    },
+    cache: "no-store",
+  });
+
+  const data = (await res.json()) as GooglePlaceDetails;
+  if (!res.ok) {
+    throw new Error(`Google place details ${res.status}: ${data.error?.message ?? "unknown"}`);
+  }
+
+  const components = data.addressComponents ?? [];
+  const pick = (type: string, short = false) => {
+    const c = components.find((c) => c.types.includes(type));
+    return c ? (short ? c.shortText : c.longText) : "";
+  };
+
+  const street = pick("route");
+  const suburb = pick("locality") || pick("sublocality") || pick("administrative_area_level_2");
+  const postcode = pick("postal_code");
+  if (!street || !suburb || !postcode || !data.location) return null;
+
+  // A unit number is part of the address a driver needs, so keep it attached
+  // to the street number rather than dropping it: "5/95".
+  const subpremise = pick("subpremise");
+  const streetNumber = pick("street_number");
+  const number = [subpremise, streetNumber].filter(Boolean).join("/") || null;
+
+  return {
+    streetNumber: number,
+    street,
+    suburb,
+    state: pick("administrative_area_level_1", true),
+    postcode,
+    lat: data.location.latitude,
+    lng: data.location.longitude,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Photon (keyless fallback)                                                  */
 /* -------------------------------------------------------------------------- */
 
 type PhotonFeature = {
@@ -82,7 +224,7 @@ const AU_STATE_ABBREV: Record<string, string> = {
   "Australian Capital Territory": "ACT",
 };
 
-async function viaPhoton(query: string): Promise<AddressSuggestion[]> {
+async function photonSuggest(query: string): Promise<AddressPrediction[]> {
   const url = new URL("https://photon.komoot.io/api/");
   url.searchParams.set("q", query);
   url.searchParams.set("limit", "8");
@@ -96,16 +238,16 @@ async function viaPhoton(query: string): Promise<AddressSuggestion[]> {
   if (!res.ok) throw new Error(`Photon failed: ${res.status}`);
 
   const data = (await res.json()) as { features?: PhotonFeature[] };
-
   const seen = new Set<string>();
+
   return (data.features ?? [])
-    // bbox biases but doesn't strictly filter, so drop anything not in AU.
+    // bbox biases but doesn't strictly filter, so drop anything outside AU.
     .filter((f) => f.properties.countrycode === "AU")
     .map(fromPhoton)
-    .filter((s): s is AddressSuggestion => s !== null)
-    .filter((s) => {
-      // Photon happily returns the same road three times from different OSM ways.
-      const dedupe = `${s.streetNumber ?? ""}|${s.street}|${s.suburb}|${s.postcode}`.toLowerCase();
+    .filter((p): p is AddressPrediction => p !== null)
+    .filter((p) => {
+      // Photon returns the same road several times from different OSM ways.
+      const dedupe = p.id.toLowerCase();
       if (seen.has(dedupe)) return false;
       seen.add(dedupe);
       return true;
@@ -113,82 +255,30 @@ async function viaPhoton(query: string): Promise<AddressSuggestion[]> {
     .slice(0, 5);
 }
 
-function fromPhoton(f: PhotonFeature): AddressSuggestion | null {
+function fromPhoton(f: PhotonFeature): AddressPrediction | null {
   const p = f.properties;
   const street = p.street ?? p.name;
   const suburb = p.city ?? p.locality ?? p.district ?? p.county;
 
-  // A result with no street or no suburb is a region centroid — a truck can't
-  // be sent to it, so it's noise in a list of delivery addresses.
+  // No street or no suburb means a region centroid — a truck can't be sent to
+  // it, so it's noise in a list of delivery addresses.
   if (!street || !suburb || !p.postcode) return null;
 
-  return {
-    id: String(p.osm_id ?? `${street}-${suburb}-${p.postcode}`),
+  const state = AU_STATE_ABBREV[p.state ?? ""] ?? p.state ?? "";
+  const resolved: ResolvedAddress = {
     streetNumber: p.housenumber ?? null,
     street,
     suburb,
-    state: AU_STATE_ABBREV[p.state ?? ""] ?? p.state ?? "",
+    state,
     postcode: p.postcode,
     lng: f.geometry.coordinates[0],
     lat: f.geometry.coordinates[1],
   };
-}
-
-/* -------------------------------------------------------------------------- */
-
-type GoogleResult = {
-  place_id: string;
-  geometry: { location: { lat: number; lng: number } };
-  address_components: { long_name: string; short_name: string; types: string[] }[];
-};
-
-async function viaGoogle(query: string, key: string): Promise<AddressSuggestion[]> {
-  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  url.searchParams.set("address", query);
-  url.searchParams.set("components", "country:AU");
-  url.searchParams.set("key", key);
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Google geocoding failed: ${res.status}`);
-
-  const data = (await res.json()) as {
-    status: string;
-    error_message?: string;
-    results?: GoogleResult[];
-  };
-
-  // ZERO_RESULTS is a legitimate empty answer. Anything else is usually
-  // billing not being enabled, and should surface rather than look like a typo.
-  if (data.status === "ZERO_RESULTS") return [];
-  if (data.status !== "OK") {
-    throw new Error(`Google geocoding: ${data.status} ${data.error_message ?? ""}`.trim());
-  }
-
-  return (data.results ?? [])
-    .map(fromGoogle)
-    .filter((s): s is AddressSuggestion => s !== null)
-    .slice(0, 5);
-}
-
-function fromGoogle(r: GoogleResult): AddressSuggestion | null {
-  const pick = (type: string, short = false) => {
-    const c = r.address_components.find((c) => c.types.includes(type));
-    return c ? (short ? c.short_name : c.long_name) : "";
-  };
-
-  const street = pick("route");
-  const suburb = pick("locality") || pick("sublocality");
-  const postcode = pick("postal_code");
-  if (!street || !suburb || !postcode) return null;
 
   return {
-    id: r.place_id,
-    streetNumber: pick("street_number") || null,
-    street,
-    suburb,
-    state: pick("administrative_area_level_1", true),
-    postcode,
-    lat: r.geometry.location.lat,
-    lng: r.geometry.location.lng,
+    id: `${p.housenumber ?? ""}|${street}|${suburb}|${p.postcode}`,
+    primary: [p.housenumber, street].filter(Boolean).join(" "),
+    secondary: `${suburb} ${state} ${p.postcode}`,
+    resolved,
   };
 }

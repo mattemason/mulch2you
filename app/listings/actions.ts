@@ -10,7 +10,12 @@ import { getCurrentUser } from "@/lib/session";
 import { fuzzCoords } from "@/lib/geo";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { deleteObject, newKey, putObject } from "@/lib/storage";
-import { suggestAddresses, type AddressSuggestion } from "@/lib/geocode";
+import {
+  resolveAddress,
+  suggestAddresses,
+  type AddressPrediction,
+  type ResolvedAddress,
+} from "@/lib/geocode";
 import {
   DROP_SPOT_KEYS,
   MATERIAL_WANTED_KEYS,
@@ -18,21 +23,48 @@ import {
   tierMaxM3,
 } from "@/lib/listing-options";
 
-export type LookupState = { results?: AddressSuggestion[]; error?: string };
+export type LookupState = { results?: AddressPrediction[]; error?: string };
 
 /**
  * Called on every (debounced) keystroke in the address field, so it stays
- * cheap: no database writes, no logging of what people type.
+ * cheap: no database writes, no logging of what people type. The session token
+ * comes from the client and groups a whole typing session into one billable
+ * Google autocomplete session rather than one per keystroke.
  */
-export async function lookupAddress(query: string): Promise<LookupState> {
+export async function lookupAddress(
+  query: string,
+  sessionToken?: string,
+): Promise<LookupState> {
   const user = await getCurrentUser();
   if (!user) return { error: "Please sign in again." };
 
   try {
-    return { results: await suggestAddresses(query) };
+    return { results: await suggestAddresses(query, sessionToken) };
   } catch (err) {
-    console.error("geocode failed", err);
-    return { error: "Address lookup is temporarily unavailable — you can still type it in full." };
+    console.error("address autocomplete failed", err);
+    return { error: "Address lookup is temporarily unavailable — try again in a moment." };
+  }
+}
+
+export type ResolveState = { address?: ResolvedAddress; error?: string };
+
+/** Second half of the lookup, for providers that only hand back an id. */
+export async function resolvePrediction(
+  id: string,
+  sessionToken?: string,
+): Promise<ResolveState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Please sign in again." };
+
+  try {
+    const address = await resolveAddress(id, sessionToken);
+    if (!address) {
+      return { error: "We couldn't get the full address for that one. Try another suggestion." };
+    }
+    return { address };
+  } catch (err) {
+    console.error("address resolve failed", err);
+    return { error: "Address lookup is temporarily unavailable — try again in a moment." };
   }
 }
 

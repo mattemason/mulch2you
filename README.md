@@ -158,6 +158,31 @@ whose pin we deliberately fuzz to ~300 m.
 > Object storage (R2/S3) is the right move once volume grows — `lib/storage.ts`
 > is the only file that needs to change.
 
+## Address lookup
+
+`lib/geocode.ts` has two providers behind one interface, chosen at runtime:
+
+**Google Places (New)** when `GOOGLE_MAPS_KEY` is set. Autocomplete returns
+predictions, then one Place Details call resolves the pick. Both share a
+**session token** so Google bills the whole typing session as one unit instead
+of charging per keystroke — the token is minted client-side and discarded once
+details are fetched. Enable *Places API (New)* and *Geocoding API*, attach
+billing, and restrict the key by API only (calls are server-side; there is no
+stable Railway egress IP to lock to and the key never reaches a browser).
+
+**Photon** otherwise — free, keyless, fuzzy. Returns everything in one hit, so
+predictions arrive pre-resolved and no second call happens.
+
+The address step deliberately keeps the street number editable under both. OSM
+answers "1 Hastings Street" with number 18 and has nothing at all for many rural
+roads; Google is much better but still misses unit numbers. A geocoder silently
+overwriting a typed number sends a truck to the wrong house, so the user
+confirms it. Coordinates only need to be street-accurate — pins are fuzzed
+~300 m regardless.
+
+The address step footer names the live provider, which is the quickest way to
+confirm a key took effect.
+
 ## Approving tree services
 
 Suppliers can't see a single pin until a human approves them — pins are

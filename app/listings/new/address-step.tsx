@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { lookupAddress } from "../actions";
-import { parseStreetNumber, type AddressSuggestion } from "@/lib/geocode";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { lookupAddress, resolvePrediction } from "../actions";
+import { parseStreetNumber, type AddressPrediction, type ResolvedAddress } from "@/lib/geocode";
 
 export type ConfirmedAddress = {
   addressLine: string;
@@ -16,17 +16,16 @@ export type ConfirmedAddress = {
 const DEBOUNCE_MS = 300;
 
 /**
- * Address entry in two beats: search the street, then confirm the number.
+ * Address entry in two beats: pick the place, then confirm the number.
  *
- * The split exists because OSM house numbers in Australia are unreliable —
- * asking for 1 Hastings Street can return number 18, and rural roads often
- * have no numbers at all. Letting a geocoder silently overwrite what someone
- * typed would send a truck to the wrong house. So a suggestion supplies the
- * street, suburb and coordinates; the number stays the user's, pre-filled from
- * whatever they typed and editable before they commit.
+ * The confirmation step exists because a geocoder silently overwriting a typed
+ * street number would send a truck to the wrong house — and that isn't
+ * hypothetical, OSM answers "1 Hastings Street" with number 18, and rural roads
+ * often have no numbers at all. Google is far better here, but a unit number it
+ * didn't catch still has to be addable, so the field stays editable either way.
  *
- * Street-level coordinates are fine here — every pin is fuzzed ~300 m anyway,
- * so precision buys nothing. What must be right is the text the driver reads.
+ * Street-level coordinates are fine: every pin is fuzzed ~300 m regardless, so
+ * precision buys nothing. What must be exact is the text the driver reads.
  */
 export function AddressStep({
   onConfirm,
@@ -36,24 +35,36 @@ export function AddressStep({
   geocoder: string;
 }) {
   const [query, setQuery] = useState("");
-  const [chosen, setChosen] = useState<AddressSuggestion | null>(null);
+  const [chosen, setChosen] = useState<ResolvedAddress | null>(null);
   const [streetNumber, setStreetNumber] = useState("");
   const [touched, setTouched] = useState(false);
+  const [resolveError, setResolveError] = useState<string | null>(null);
+  const [resolving, startResolve] = useTransition();
 
   /**
-   * Results are stored with the query they came from, so what's on screen can
-   * be derived rather than cleared. That keeps the effect free of synchronous
-   * setState and, more usefully, makes it impossible to show suggestions for
-   * a query the user has already typed past.
+   * Results carry the query they came from, so what's on screen is derived
+   * rather than cleared — which keeps the effect free of synchronous setState
+   * and makes it impossible to show suggestions for a query already typed past.
    */
   const [answer, setAnswer] = useState<{
     query: string;
-    items: AddressSuggestion[];
+    items: AddressPrediction[];
     error: string | null;
   }>({ query: "", items: [], error: null });
 
-  // Ignores responses that arrive out of order.
   const seq = useRef(0);
+
+  /**
+   * One token per typing session. Google bills every keystroke plus the closing
+   * details lookup as a single session when they share a token, and per request
+   * when they don't. Minted on first use rather than during render, since
+   * randomUUID isn't a pure call.
+   */
+  const sessionToken = useRef<string | null>(null);
+  function token(): string {
+    sessionToken.current ??= crypto.randomUUID();
+    return sessionToken.current;
+  }
 
   const trimmed = query.trim();
   const longEnough = trimmed.length >= 4;
@@ -67,7 +78,7 @@ export function AddressStep({
 
     const mine = ++seq.current;
     const timer = setTimeout(async () => {
-      const res = await lookupAddress(trimmed);
+      const res = await lookupAddress(trimmed, token());
       if (mine !== seq.current) return;
       setAnswer({ query: trimmed, items: res.results ?? [], error: res.error ?? null });
     }, DEBOUNCE_MS);
@@ -75,10 +86,25 @@ export function AddressStep({
     return () => clearTimeout(timer);
   }, [trimmed, longEnough, chosen]);
 
-  function pick(s: AddressSuggestion) {
-    setChosen(s);
-    // Prefer what the user typed; fall back to whatever the geocoder knew.
-    setStreetNumber(parseStreetNumber(query) ?? s.streetNumber ?? "");
+  function accept(address: ResolvedAddress) {
+    setChosen(address);
+    // Prefer what the user typed; fall back to what the provider knew.
+    setStreetNumber(parseStreetNumber(query) ?? address.streetNumber ?? "");
+    // Fetching details closes the session; the next search opens a fresh one.
+    sessionToken.current = null;
+  }
+
+  function pick(p: AddressPrediction) {
+    setResolveError(null);
+    if (p.resolved) {
+      accept(p.resolved);
+      return;
+    }
+    startResolve(async () => {
+      const res = await resolvePrediction(p.id, token());
+      if (res.address) accept(res.address);
+      else setResolveError(res.error ?? "Couldn't load that address.");
+    });
   }
 
   function confirm() {
@@ -108,7 +134,6 @@ export function AddressStep({
             id="streetNumber"
             value={streetNumber}
             onChange={(e) => setStreetNumber(e.target.value)}
-            inputMode="numeric"
             autoFocus
             placeholder="95"
             className="field"
@@ -164,30 +189,29 @@ export function AddressStep({
         className="field"
       />
       <p className="mt-1.5 text-xs text-muted">
-        Start typing and pick your street — spelling doesn&apos;t have to be
+        Start typing and pick your address — spelling doesn&apos;t have to be
         perfect. We only ever show other users your suburb and an approximate
         pin, never your street address, until you accept a drop.
       </p>
 
-      {error && (
+      {(error || resolveError) && (
         <p className="mt-4 rounded-lg border border-border bg-card p-3 text-sm text-accent">
-          {error}
+          {error ?? resolveError}
         </p>
       )}
 
       {results.length > 0 && (
-        <ul className="mt-4 space-y-2">
-          {results.map((s) => (
-            <li key={s.id}>
+        <ul className="mt-4 space-y-2" aria-busy={resolving}>
+          {results.map((p) => (
+            <li key={p.id}>
               <button
                 type="button"
-                onClick={() => pick(s)}
-                className="card w-full text-left transition-colors hover:border-brand"
+                onClick={() => pick(p)}
+                disabled={resolving}
+                className="card w-full text-left transition-colors hover:border-brand disabled:opacity-60"
               >
-                <div className="font-medium">{s.street}</div>
-                <div className="mt-0.5 text-sm text-muted">
-                  {s.suburb} {s.state} {s.postcode}
-                </div>
+                <div className="font-medium">{p.primary}</div>
+                {p.secondary && <div className="mt-0.5 text-sm text-muted">{p.secondary}</div>}
               </button>
             </li>
           ))}
@@ -196,8 +220,8 @@ export function AddressStep({
 
       {!searching && longEnough && results.length === 0 && !error && (
         <p className="mt-4 text-sm text-muted">
-          No match yet — try just the street and suburb, like &ldquo;Eumundi
-          Noosa Rd Noosaville&rdquo;.
+          No match yet — try the street and suburb, like &ldquo;Eumundi Noosa Rd
+          Noosaville&rdquo;.
         </p>
       )}
 
