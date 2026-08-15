@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f8f5;
+  --foreground: #16241b;
+  --card: #ffffff;
+  --border: #e0e5dd;
+  --muted: #64756a;
+  --brand: #2f7a3f;
+  --brand-fg: #ffffff;
+  --accent: #b4791f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0e130f;
+    --foreground: #e6ece7;
+    --card: #161d18;
+    --border: #26302a;
+    --muted: #93a398;
+    --brand: #4f9e5f;
+    --brand-fg: #08120a;
+    --accent: #d19a3d;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Tradies use this one-handed at a job site. Keep tap targets thumb-sized.
+   Tailwind v4 can't @apply a custom component class, so the shared button
+   rules are written once here and the variants only add colour. */
+@layer components {
+  .btn,
+  .btn-primary,
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3
+           text-base font-semibold transition-colors disabled:opacity-50
+           disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-brand text-brand-fg hover:opacity-90;
+  }
+  .btn-secondary {
+    @apply border border-border bg-card hover:bg-background;
+  }
+  .card {
+    @apply rounded-xl border border-border bg-card p-6;
+  }
+  .field {
+    @apply w-full rounded-lg border border-border bg-card px-4 py-3 text-base
+           outline-none focus:border-brand focus:ring-2 focus:ring-brand/25;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium;
+  }
+}
