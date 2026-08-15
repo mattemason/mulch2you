@@ -23,8 +23,12 @@ listings store two sets of coordinates and why suppliers are approved by hand.
 ```bash
 npm install
 cp .env.example .env.local
-npx auth secret          # writes AUTH_SECRET into .env.local
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+Paste that value into `AUTH_SECRET` in `.env.local`. (Don't use `npx auth secret`
+— the `auth` package on npm is better-auth's CLI, not Auth.js, and emits a
+differently-named variable.)
 
 Point `DATABASE_URL` at a local Postgres or at Railway's public proxy URL, then:
 
