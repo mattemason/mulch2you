@@ -36,6 +36,13 @@
       "when": 1786827388032,
       "tag": "0004_add_photo_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786828632392,
+      "tag": "0005_add_material_wanted",
+      "breakpoints": true
     }
   ]
 }

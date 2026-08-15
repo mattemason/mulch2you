@@ -34,6 +34,17 @@ export const listingStatus = pgEnum("listing_status", ["active", "paused", "fulf
  */
 export const volumeTier = pgEnum("volume_tier", ["small", "medium", "large", "unlimited"]);
 
+/**
+ * What the receiver actually wants on the truck. Broadest option first in the
+ * driver's mind: "any green waste" takes loads nobody else will, which is
+ * exactly the material a crew most wants rid of.
+ */
+export const materialWanted = pgEnum("material_wanted", [
+  "wood_chips",
+  "mulch_and_chips",
+  "any_green_waste",
+]);
+
 export const dropStatus = pgEnum("drop_status", [
   "offered",
   "accepted",
@@ -176,6 +187,7 @@ export const listings = pgTable(
 
     // Default exists only so the column can be added NOT NULL; every write
     // path sets it explicitly from the tier the receiver picked.
+    wanted: materialWanted("wanted").notNull().default("wood_chips"),
     tier: volumeTier("tier").notNull().default("medium"),
     /**
      * Denormalised ceiling from the tier, so the map's "takes a full truck"

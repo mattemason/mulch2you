@@ -2,6 +2,7 @@ import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { supplierProfiles, users } from "@/lib/db/schema";
 import type { SupplierProfile, User } from "@/lib/db/schema";
 
@@ -41,4 +42,20 @@ export async function requireUser(): Promise<CurrentUser> {
  */
 export function isApprovedSupplier(user: CurrentUser | null): boolean {
   return user?.role === "supplier" && !!user.supplierProfile?.verifiedAt;
+}
+
+/**
+ * Admin is independent of role, so the same person can run the site and also
+ * have a listing. Driven by ADMIN_EMAILS rather than a column, because a
+ * database flag has no way to grant itself the first time.
+ */
+export function isAdmin(user: CurrentUser | null): boolean {
+  if (!user?.email) return false;
+  return adminEmails().includes(user.email.trim().toLowerCase());
+}
+
+function adminEmails(): string[] {
+  return env.ADMIN_EMAILS.split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
 }

@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { listings } from "@/lib/db/schema";
-import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
-import { VOLUME_TIERS } from "@/lib/listing-options";
+import { getCurrentUser, isAdmin, isApprovedSupplier } from "@/lib/session";
+import { MATERIALS_WANTED, VOLUME_TIERS } from "@/lib/listing-options";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -42,6 +42,15 @@ export default async function DashboardPage() {
         ) : (
           <ReceiverPanel userId={user.id} />
         )}
+
+        {isAdmin(user) && (
+          <Link
+            href="/admin"
+            className="mt-8 inline-block text-sm text-brand hover:underline"
+          >
+            Admin — approve tree services
+          </Link>
+        )}
       </div>
     </main>
   );
@@ -66,24 +75,37 @@ async function ReceiverPanel({ userId }: { userId: string }) {
   }
 
   return (
-    <ul className="mt-6 space-y-3">
-      {mine.map((l) => (
-        <li key={l.id} className="card flex items-center justify-between">
-          <div>
-            <div className="font-medium">
-              {l.suburb} {l.state} {l.postcode}
+    <>
+      <ul className="mt-6 space-y-3">
+        {mine.map((l) => (
+          <li key={l.id} className="card flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="font-medium">
+                {l.suburb} {l.state} {l.postcode}
+              </div>
+              <div className="mt-0.5 text-sm text-muted">
+                {MATERIALS_WANTED[l.wanted].label} · {VOLUME_TIERS[l.tier].label}
+                {l.preAuthorised && " · drop anytime"} · {l.status}
+              </div>
             </div>
-            <div className="mt-0.5 text-sm text-muted">
-              {VOLUME_TIERS[l.tier].label}
-              {l.preAuthorised && " · drop anytime"} · {l.status}
-            </div>
-          </div>
-          <Link href={`/listings/${l.id}`} className="text-sm text-brand hover:underline">
-            Manage
-          </Link>
-        </li>
-      ))}
-    </ul>
+            <Link
+              href={`/listings/${l.id}`}
+              className="shrink-0 text-sm text-brand hover:underline"
+            >
+              Manage
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <Link href="/listings/new" className="btn-secondary mt-4">
+        Add another listing
+      </Link>
+      <p className="mt-2 text-sm text-muted">
+        Got a second property, or want mulch somewhere else? Each spot needs its
+        own pin.
+      </p>
+    </>
   );
 }
 

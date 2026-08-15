@@ -26,6 +26,13 @@ const schema = z.object({
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM: z.string().optional(),
 
+  /**
+   * Comma-separated emails that get the admin screens. Kept in config rather
+   * than a database flag so there's no chicken-and-egg: the first admin has to
+   * exist before anyone can grant admin.
+   */
+  ADMIN_EMAILS: z.string().default(""),
+
   CRON_SECRET: z.string().optional(),
 
   // Photo storage. On Railway this MUST point at a mounted volume, or every

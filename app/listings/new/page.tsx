@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { isUsingFallbackGeocoder } from "@/lib/geocode";
+import { geocoderName } from "@/lib/geocode";
 import { NewListingForm } from "./form";
 
 export default async function NewListingPage() {
@@ -21,7 +21,7 @@ export default async function NewListingPage() {
       </header>
 
       <div className="mx-auto max-w-2xl px-6 py-10">
-        <NewListingForm usingFallbackGeocoder={isUsingFallbackGeocoder()} />
+        <NewListingForm geocoder={geocoderName()} />
       </div>
     </main>
   );

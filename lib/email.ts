@@ -48,6 +48,29 @@ export async function sendMagicLinkEmail({ to, url }: { to: string; url: string 
   });
 }
 
+export async function sendSupplierApprovedEmail({
+  to,
+  name,
+  mapUrl,
+}: {
+  to: string;
+  name: string | null;
+  mapUrl: string;
+}) {
+  const greeting = name ? `G'day ${name.split(" ")[0]},` : "G'day,";
+  await sendEmail({
+    to,
+    subject: "You're approved on Mulch2You",
+    text: `${greeting}\n\nYou're approved. Open the map when you've got a full truck and you'll see who wants chip nearby: ${mapUrl}\n\nPins marked with a lightning bolt can be claimed on the spot — tap once and you get the address.`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#14341f;">You're approved</h1>
+      <p style="margin:0 0 16px;color:#44544a;">${greeting} you're through — you can see the map now.</p>
+      <p style="margin:0 0 24px;color:#44544a;">Open it when you've got a full truck. Pins marked ⚡ can be claimed on the spot: tap once and you get the street address, no waiting on a phone call.</p>
+      ${button(mapUrl, "Find a drop nearby")}
+    `),
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 
 function button(url: string, label: string) {

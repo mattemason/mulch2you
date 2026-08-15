@@ -73,6 +73,7 @@ async function main() {
       lng: at.lng,
       approxLat: approx.lat,
       approxLng: approx.lng,
+      wanted: "wood_chips",
       tier: "medium",
       maxVolumeM3: "6",
       dropSpot: "driveway",

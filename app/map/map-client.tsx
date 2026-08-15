@@ -12,7 +12,13 @@ import {
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { NearbyListing } from "@/lib/db/queries";
 import { formatDistance, type Coords } from "@/lib/geo";
-import { DROP_SPOTS, EXCLUSION_LABELS, VOLUME_TIERS, type DropSpotKey } from "@/lib/listing-options";
+import {
+  DROP_SPOTS,
+  EXCLUSION_LABELS,
+  MATERIALS_WANTED,
+  VOLUME_TIERS,
+  type DropSpotKey,
+} from "@/lib/listing-options";
 import type { Exclusion } from "@/lib/db/schema";
 import { claimListing } from "@/app/drops/actions";
 
@@ -301,6 +307,10 @@ function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () =>
         </div>
 
         <div className="mt-4 space-y-2 text-sm">
+          <p>
+            <span className="font-medium">Wants:</span>{" "}
+            {MATERIALS_WANTED[listing.wanted].label}
+          </p>
           <p>
             <span className="font-medium">Will take:</span> {tier.label}
           </p>

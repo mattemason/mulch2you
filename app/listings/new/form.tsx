@@ -1,139 +1,47 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { createListing, lookupAddress, type ListingState } from "../actions";
+import { createListing, type ListingState } from "../actions";
+import { AddressStep, type ConfirmedAddress } from "./address-step";
 import { PhotoField } from "@/app/photo-field";
-import type { GeocodeResult } from "@/lib/geocode";
 import { EXCLUSIONS } from "@/lib/db/schema";
 import {
   DROP_SPOTS,
   DROP_SPOT_KEYS,
   EXCLUSION_LABELS,
+  MATERIALS_WANTED,
+  MATERIAL_WANTED_KEYS,
   VOLUME_TIERS,
   VOLUME_TIER_KEYS,
   formatPrice,
   type DropSpotKey,
+  type MaterialWantedKey,
   type VolumeTierKey,
 } from "@/lib/listing-options";
 
-export function NewListingForm({ usingFallbackGeocoder }: { usingFallbackGeocoder: boolean }) {
-  const [address, setAddress] = useState<GeocodeResult | null>(null);
+export function NewListingForm({ geocoder }: { geocoder: string }) {
+  const [address, setAddress] = useState<ConfirmedAddress | null>(null);
 
   return address ? (
     <DetailsStep address={address} onBack={() => setAddress(null)} />
   ) : (
-    <AddressStep onPick={setAddress} usingFallbackGeocoder={usingFallbackGeocoder} />
+    <AddressStep onConfirm={setAddress} geocoder={geocoder} />
   );
 }
 
-/* -------------------------------------------------------------------------- */
-
-function AddressStep({
-  onPick,
-  usingFallbackGeocoder,
-}: {
-  onPick: (r: GeocodeResult) => void;
-  usingFallbackGeocoder: boolean;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GeocodeResult[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  function search() {
-    setError(null);
-    startTransition(async () => {
-      const res = await lookupAddress(query);
-      setResults(res.results ?? []);
-      setError(res.error ?? null);
-    });
-  }
-
-  return (
-    <div className="mt-6">
-      <Step n={1} of={2} title="Where should the mulch go?" />
-
-      <label className="label mt-6" htmlFor="query">
-        Your address
-      </label>
-      <div className="flex gap-2">
-        <input
-          id="query"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              search();
-            }
-          }}
-          placeholder="12 Smith St, Katoomba NSW 2780"
-          autoComplete="street-address"
-          className="field"
-        />
-        <button
-          type="button"
-          onClick={search}
-          disabled={pending || query.trim().length < 5}
-          className="btn-secondary shrink-0"
-        >
-          {pending ? "…" : "Find"}
-        </button>
-      </div>
-      <p className="mt-1.5 text-xs text-muted">
-        Include the suburb and postcode. We only ever show other users your
-        suburb and an approximate pin — never your street address, until you
-        accept a drop.
-      </p>
-
-      {error && (
-        <p className="mt-4 rounded-lg border border-border bg-card p-3 text-sm text-accent">
-          {error}
-        </p>
-      )}
-
-      {results.length > 0 && (
-        <div className="mt-6">
-          <div className="label">Pick the right one</div>
-          <ul className="space-y-2">
-            {results.map((r, i) => (
-              <li key={`${r.formatted}-${i}`}>
-                <button
-                  type="button"
-                  onClick={() => onPick(r)}
-                  className="card w-full text-left transition-colors hover:border-brand"
-                >
-                  <div className="font-medium">
-                    {r.addressLine}, {r.suburb} {r.state} {r.postcode}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted">{r.formatted}</div>
-                </button>
-              </li>
-            ))}
-          </ul>
-          {usingFallbackGeocoder && (
-            <p className="mt-3 text-xs text-muted">
-              Not listed? Address data is patchy for newer streets until we
-              switch on the paid lookup.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-
-function DetailsStep({ address, onBack }: { address: GeocodeResult; onBack: () => void }) {
+function DetailsStep({ address, onBack }: { address: ConfirmedAddress; onBack: () => void }) {
   const [state, action] = useActionState<ListingState, FormData>(createListing, {});
+  const [wanted, setWanted] = useState<MaterialWantedKey>("wood_chips");
   const [tier, setTier] = useState<VolumeTierKey>("medium");
   const [dropSpot, setDropSpot] = useState<DropSpotKey>("driveway");
 
   return (
     <form action={action} className="mt-6">
-      <Step n={2} of={2} title="What will you take?" />
+      <div>
+        <div className="text-xs font-medium uppercase tracking-wide text-muted">Step 2 of 2</div>
+        <h1 className="mt-1 text-2xl font-semibold">What do you want?</h1>
+      </div>
 
       <input type="hidden" name="addressLine" value={address.addressLine} />
       <input type="hidden" name="suburb" value={address.suburb} />
@@ -152,6 +60,27 @@ function DetailsStep({ address, onBack }: { address: GeocodeResult; onBack: () =
         <button type="button" onClick={onBack} className="shrink-0 text-sm text-brand hover:underline">
           Change
         </button>
+      </div>
+
+      {/* Material ---------------------------------------------------------- */}
+      <div className="mt-8">
+        <label className="label" htmlFor="wanted">
+          What do you want?
+        </label>
+        <select
+          id="wanted"
+          name="wanted"
+          value={wanted}
+          onChange={(e) => setWanted(e.target.value as MaterialWantedKey)}
+          className="field"
+        >
+          {MATERIAL_WANTED_KEYS.map((key) => (
+            <option key={key} value={key}>
+              {MATERIALS_WANTED[key].label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1.5 text-xs text-muted">{MATERIALS_WANTED[wanted].blurb}</p>
       </div>
 
       {/* Volume ------------------------------------------------------------ */}
@@ -315,16 +244,5 @@ function Submit() {
     <button type="submit" disabled={pending} className="btn-primary mt-8 w-full">
       {pending ? "Creating…" : "Put my pin on the map"}
     </button>
-  );
-}
-
-function Step({ n, of, title }: { n: number; of: number; title: string }) {
-  return (
-    <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">
-        Step {n} of {of}
-      </div>
-      <h1 className="mt-1 text-2xl font-semibold">{title}</h1>
-    </div>
   );
 }

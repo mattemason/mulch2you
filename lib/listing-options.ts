@@ -40,6 +40,29 @@ export const VOLUME_TIERS = {
   { label: string; blurb: string; maxM3: number | null; priceCents: number }
 >;
 
+/**
+ * What the receiver wants. Ordered narrow → broad, and the copy nudges toward
+ * the broad end: a pin that accepts anything gets offered loads the fussy ones
+ * never see, because "any green waste" is precisely what a crew is stuck with.
+ */
+export const MATERIALS_WANTED = {
+  wood_chips: {
+    label: "Wood chips",
+    blurb: "Straight arborist chip — branches and limbs through the chipper.",
+  },
+  mulch_and_chips: {
+    label: "Garden mulch + wood chips",
+    blurb: "Chip plus finer material. Better for garden beds, takes longer to arrive.",
+  },
+  any_green_waste: {
+    label: "Any green waste",
+    blurb: "Chip, prunings, leaf litter, the lot. Most drivers, shortest wait.",
+  },
+} as const satisfies Record<string, { label: string; blurb: string }>;
+
+export type MaterialWantedKey = keyof typeof MATERIALS_WANTED;
+export const MATERIAL_WANTED_KEYS = Object.keys(MATERIALS_WANTED) as MaterialWantedKey[];
+
 export type VolumeTierKey = keyof typeof VOLUME_TIERS;
 export const VOLUME_TIER_KEYS = Object.keys(VOLUME_TIERS) as VolumeTierKey[];
 

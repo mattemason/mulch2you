@@ -158,6 +158,16 @@ whose pin we deliberately fuzz to ~300 m.
 > Object storage (R2/S3) is the right move once volume grows — `lib/storage.ts`
 > is the only file that needs to change.
 
+## Approving tree services
+
+Suppliers can't see a single pin until a human approves them — pins are
+people's homes. Set `ADMIN_EMAILS` to your sign-in address and `/admin` appears,
+listing pending businesses with a link to look each ABN up on the ABR. Approving
+sends them the "you're in" email the dashboard promises.
+
+`ADMIN_EMAILS` is config rather than a database column on purpose: a flag in the
+database has no way to grant itself the first time.
+
 ## Status
 
 **Phase 0 — done.** Auth, schema, migrations, deploy config.

@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/session";
 import {
   DROP_SPOTS,
   EXCLUSION_LABELS,
+  MATERIALS_WANTED,
   VOLUME_TIERS,
   daysUntilStale,
   formatPrice,
@@ -53,6 +54,7 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
         </div>
 
         <dl className="mt-8 space-y-4">
+          <Row label="Wants">{MATERIALS_WANTED[listing.wanted].label}</Row>
           <Row label="Taking">
             {tier.label} · {formatPrice(tier.priceCents)} on delivery
           </Row>

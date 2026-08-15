@@ -1,0 +1,2 @@
+CREATE TYPE "public"."material_wanted" AS ENUM('wood_chips', 'mulch_and_chips', 'any_green_waste');--> statement-breakpoint
+ALTER TABLE "listings" ADD COLUMN "wanted" "material_wanted" DEFAULT 'wood_chips' NOT NULL;

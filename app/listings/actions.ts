@@ -10,27 +10,29 @@ import { getCurrentUser } from "@/lib/session";
 import { fuzzCoords } from "@/lib/geo";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { deleteObject, newKey, putObject } from "@/lib/storage";
-import { geocodeAddress, type GeocodeResult } from "@/lib/geocode";
-import { DROP_SPOT_KEYS, VOLUME_TIER_KEYS, tierMaxM3 } from "@/lib/listing-options";
+import { suggestAddresses, type AddressSuggestion } from "@/lib/geocode";
+import {
+  DROP_SPOT_KEYS,
+  MATERIAL_WANTED_KEYS,
+  VOLUME_TIER_KEYS,
+  tierMaxM3,
+} from "@/lib/listing-options";
 
-export type LookupState = { results?: GeocodeResult[]; error?: string };
+export type LookupState = { results?: AddressSuggestion[]; error?: string };
 
+/**
+ * Called on every (debounced) keystroke in the address field, so it stays
+ * cheap: no database writes, no logging of what people type.
+ */
 export async function lookupAddress(query: string): Promise<LookupState> {
   const user = await getCurrentUser();
   if (!user) return { error: "Please sign in again." };
 
   try {
-    const results = await geocodeAddress(query);
-    if (results.length === 0) {
-      return {
-        error:
-          "Couldn't find that address. Try including the suburb and postcode, e.g. \"12 Smith St, Katoomba NSW 2780\".",
-      };
-    }
-    return { results };
+    return { results: await suggestAddresses(query) };
   } catch (err) {
     console.error("geocode failed", err);
-    return { error: "Address lookup is temporarily unavailable. Try again in a moment." };
+    return { error: "Address lookup is temporarily unavailable — you can still type it in full." };
   }
 }
 
@@ -51,6 +53,7 @@ const listingSchema = z.object({
   postcode: z.string().trim().regex(/^\d{4}$/, "Postcode should be four digits"),
   lat: z.coerce.number().min(AU_BOUNDS.minLat).max(AU_BOUNDS.maxLat),
   lng: z.coerce.number().min(AU_BOUNDS.minLng).max(AU_BOUNDS.maxLng),
+  wanted: z.enum(MATERIAL_WANTED_KEYS),
   tier: z.enum(VOLUME_TIER_KEYS),
   dropSpot: z.enum(DROP_SPOT_KEYS),
   accessNotes: z.string().trim().max(500).optional(),
@@ -77,6 +80,7 @@ export async function createListing(
     postcode: formData.get("postcode"),
     lat: formData.get("lat"),
     lng: formData.get("lng"),
+    wanted: formData.get("wanted"),
     tier: formData.get("tier"),
     dropSpot: formData.get("dropSpot"),
     accessNotes: formData.get("accessNotes") || undefined,
@@ -119,6 +123,7 @@ export async function createListing(
     lng: d.lng,
     approxLat: approx.lat,
     approxLng: approx.lng,
+    wanted: d.wanted,
     tier: d.tier,
     maxVolumeM3: maxM3 === null ? null : String(maxM3),
     excludes: d.excludes,

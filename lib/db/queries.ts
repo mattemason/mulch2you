@@ -10,6 +10,7 @@ export type NearbyListing = {
   postcode: string;
   approxLat: number;
   approxLng: number;
+  wanted: "wood_chips" | "mulch_and_chips" | "any_green_waste";
   tier: "small" | "medium" | "large" | "unlimited";
   maxVolumeM3: string | null;
   excludes: string[];
@@ -65,6 +66,7 @@ export async function findNearbyListings(
       postcode: listings.postcode,
       approxLat: listings.approxLat,
       approxLng: listings.approxLng,
+      wanted: listings.wanted,
       tier: listings.tier,
       maxVolumeM3: listings.maxVolumeM3,
       excludes: listings.excludes,

@@ -5,7 +5,12 @@ import { db } from "@/lib/db";
 import { drops, listings, users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { formatAuMobile } from "@/lib/phone";
-import { DROP_SPOTS, VOLUME_TIERS, type DropSpotKey } from "@/lib/listing-options";
+import {
+  DROP_SPOTS,
+  MATERIALS_WANTED,
+  VOLUME_TIERS,
+  type DropSpotKey,
+} from "@/lib/listing-options";
 import { CompleteDropForm } from "./complete-form";
 
 export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
@@ -82,6 +87,10 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
         )}
 
         <dl className="mt-6 space-y-3 text-sm">
+          <div className="flex gap-3">
+            <dt className="w-32 shrink-0 text-muted">Wants</dt>
+            <dd>{MATERIALS_WANTED[listing.wanted].label}</dd>
+          </div>
           <div className="flex gap-3">
             <dt className="w-32 shrink-0 text-muted">Will take</dt>
             <dd>{VOLUME_TIERS[listing.tier].label}</dd>
