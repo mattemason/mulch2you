@@ -20,7 +20,12 @@ import {
   tierMaxM3,
 } from "@/lib/listing-options";
 
-export type LookupState = { results?: AddressPrediction[]; error?: string };
+export type LookupState = {
+  results?: AddressPrediction[];
+  /** Whichever provider actually answered, which may be the fallback. */
+  provider?: "Google" | "Photon";
+  error?: string;
+};
 
 /**
  * Called on every (debounced) keystroke in the address field, so it stays
@@ -36,8 +41,10 @@ export async function lookupAddress(
   if (!user) return { error: "Please sign in again." };
 
   try {
-    return { results: await suggestAddresses(query, sessionToken) };
+    const { predictions, provider } = await suggestAddresses(query, sessionToken);
+    return { results: predictions, provider };
   } catch (err) {
+    // Only reachable if the fallback failed too — i.e. no provider is up.
     console.error("address autocomplete failed", err);
     return { error: "Address lookup is temporarily unavailable — try again in a moment." };
   }

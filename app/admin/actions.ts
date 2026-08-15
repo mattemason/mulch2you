@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { listings, supplierProfiles, users } from "@/lib/db/schema";
 import { getCurrentUser, isAdmin } from "@/lib/session";
 import { sendSupplierApprovedEmail } from "@/lib/email";
-import { GeocodeError, geocoderName, suggestAddresses } from "@/lib/geocode";
+import { GeocodeError, geocoderName, probeGeocoder } from "@/lib/geocode";
 import { env } from "@/lib/env";
 
 export type AdminResult = { error?: string; ok?: string };
@@ -113,7 +113,9 @@ export async function testGeocoder(): Promise<GeocoderTest> {
   if (!isAdmin(admin)) return { ok: false, provider, count: 0, summary: "Not authorised." };
 
   try {
-    const results = await suggestAddresses(TEST_QUERY, crypto.randomUUID());
+    // probeGeocoder, not suggestAddresses: the fallback would mask the failure
+    // this screen exists to reveal.
+    const results = await probeGeocoder(TEST_QUERY);
     return {
       ok: results.length > 0,
       provider,

@@ -40,16 +40,48 @@ export function geocoderName(): "Google" | "Photon" {
  * each keystroke separately. The caller must reuse one token for a whole typing
  * session and start a fresh one afterwards.
  */
+export type SuggestResult = {
+  predictions: AddressPrediction[];
+  /** Which provider actually answered — may not be the configured one. */
+  provider: "Google" | "Photon";
+  /** Set when the configured provider failed and we served the fallback. */
+  degraded?: string;
+};
+
 export async function suggestAddresses(
   query: string,
   sessionToken?: string,
-): Promise<AddressPrediction[]> {
+): Promise<SuggestResult> {
   const q = query.trim();
-  if (q.length < 4) return [];
+  if (q.length < 4) return { predictions: [], provider: geocoderName() };
 
-  return env.GOOGLE_MAPS_KEY
-    ? googleAutocomplete(q, env.GOOGLE_MAPS_KEY, sessionToken)
-    : photonSuggest(q);
+  if (!env.GOOGLE_MAPS_KEY) {
+    return { predictions: await photonSuggest(q), provider: "Photon" };
+  }
+
+  try {
+    return {
+      predictions: await googleAutocomplete(q, env.GOOGLE_MAPS_KEY, sessionToken),
+      provider: "Google",
+    };
+  } catch (err) {
+    // A misconfigured key shouldn't stop someone listing a pin. Photon needs
+    // no signup and is good enough to keep the funnel open, so fall back
+    // rather than fail — and record why, so /admin can show the real cause
+    // instead of everyone seeing "temporarily unavailable".
+    const reason = err instanceof GeocodeError ? `${err.message} (${err.providerMessage})` : String(err);
+    console.error("Google autocomplete failed, falling back to Photon:", reason);
+    return { predictions: await photonSuggest(q), provider: "Photon", degraded: reason };
+  }
+}
+
+/**
+ * Calls the configured provider with no fallback, so a failure surfaces
+ * instead of being papered over. Only /admin diagnostics uses this.
+ */
+export async function probeGeocoder(query: string): Promise<AddressPrediction[]> {
+  if (!env.GOOGLE_MAPS_KEY) return photonSuggest(query);
+  return googleAutocomplete(query, env.GOOGLE_MAPS_KEY, crypto.randomUUID());
 }
 
 /**

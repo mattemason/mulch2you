@@ -50,7 +50,8 @@ export function AddressStep({
     query: string;
     items: AddressPrediction[];
     error: string | null;
-  }>({ query: "", items: [], error: null });
+    provider: string | null;
+  }>({ query: "", items: [], error: null, provider: null });
 
   const seq = useRef(0);
 
@@ -80,7 +81,12 @@ export function AddressStep({
     const timer = setTimeout(async () => {
       const res = await lookupAddress(trimmed, token());
       if (mine !== seq.current) return;
-      setAnswer({ query: trimmed, items: res.results ?? [], error: res.error ?? null });
+      setAnswer({
+        query: trimmed,
+        items: res.results ?? [],
+        error: res.error ?? null,
+        provider: res.provider ?? null,
+      });
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
@@ -225,7 +231,9 @@ export function AddressStep({
         </p>
       )}
 
-      <p className="mt-6 text-xs text-muted">Addresses from {geocoder}.</p>
+      <p className="mt-6 text-xs text-muted">
+        Addresses from {answer.provider ?? geocoder}.
+      </p>
     </div>
   );
 }
