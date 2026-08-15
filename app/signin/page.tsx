@@ -1,6 +1,21 @@
 import Link from "next/link";
 import { signIn } from "@/auth";
 
+/**
+ * "Verification" is by far the most common and the least self-explanatory:
+ * the token was valid once but isn't now. Usually the link was already opened
+ * — corporate mail scanners follow links before the recipient does, and that
+ * counts as the one use.
+ */
+const ERROR_MESSAGES: Record<string, string> = {
+  Verification:
+    "That link has already been used or has expired. Links work once and last 30 minutes — some email providers open them automatically, which uses them up. Request a fresh one below.",
+  EmailSignin: "We couldn't send that email. Check the address and try again.",
+  AccessDenied: "That account doesn't have access.",
+  Configuration: "Sign-in is misconfigured on our end. We're looking into it.",
+  Default: "That link didn't work. Try again below.",
+};
+
 export default async function SignInPage({ searchParams }: PageProps<"/signin">) {
   const params = await searchParams;
   const role = typeof params.role === "string" ? params.role : undefined;
@@ -30,7 +45,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
 
         {error && (
           <p className="mt-4 rounded-lg border border-border bg-card p-3 text-sm text-accent">
-            That link didn&apos;t work — it may have expired. Try again below.
+            {ERROR_MESSAGES[error] ?? ERROR_MESSAGES.Default}
           </p>
         )}
 

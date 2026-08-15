@@ -75,6 +75,13 @@ it → `db:migrate`. Don't use `db:push` against production.
    plus `POSTMARK_SERVER_TOKEN` and `EMAIL_FROM` for real emails.
 4. Generate a public domain. `railway.json` already sets the pre-deploy
    migration, start command and `/api/health` healthcheck.
+5. **Set `AUTH_URL` to that domain** (`https://…`, no trailing slash). Without
+   it, Auth.js derives its base URL from request headers, which behind the
+   proxy can come out as `https://localhost:8080` — magic links then point at
+   the container instead of your site.
+
+`GET /api/health` reports the hostname the app sees, so if links still come out
+wrong, compare `origin.host` and `origin.forwardedHost` against your domain.
 
 ## Layout
 
