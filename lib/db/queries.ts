@@ -15,7 +15,7 @@ export type NearbyListing = {
   excludes: string[];
   dropSpot: string;
   accessNotes: string | null;
-  photoUrl: string | null;
+  photoKey: string | null;
   preAuthorised: boolean;
   distanceKm: number;
 };
@@ -70,7 +70,7 @@ export async function findNearbyListings(
       excludes: listings.excludes,
       dropSpot: listings.dropSpot,
       accessNotes: listings.accessNotes,
-      photoUrl: listings.photoUrl,
+      photoKey: listings.photoKey,
       preAuthorised: listings.preAuthorised,
       distanceKm: distance.as("distance_km"),
     })

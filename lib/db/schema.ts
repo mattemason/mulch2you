@@ -186,8 +186,12 @@ export const listings = pgTable(
     excludes: text("excludes").array().notNull().default([]),
     dropSpot: dropSpot("drop_spot").notNull(),
     accessNotes: text("access_notes"),
-    /** Photo of where the truck tips. The single most useful field in the app. */
-    photoUrl: text("photo_url"),
+    /**
+     * Storage key for the photo of where the truck tips. The most useful field
+     * in the app — overhead clearance and driveway width are what turn a
+     * driver around on arrival, and a photo says both at a glance.
+     */
+    photoKey: text("photo_key"),
 
     /**
      * "Just dump it, don't ask me first." Turns the pin into a one-tap claim
@@ -224,6 +228,13 @@ export const drops = pgTable(
     volumeM3: numeric("volume_m3", { precision: 5, scale: 1 }),
     species: text("species"),
     etaWindow: text("eta_window").$type<EtaWindow>(),
+
+    /**
+     * Photo the driver takes of the tipped load. Serves three jobs: proof the
+     * drop happened, evidence if the receiver disputes what arrived, and the
+     * trigger for taking payment — which only fires on confirmed delivery.
+     */
+    proofPhotoKey: text("proof_photo_key"),
 
     status: dropStatus("status").notNull().default("offered"),
     /** Lets a receiver accept from an SMS without ever logging in. Single use. */

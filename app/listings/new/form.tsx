@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { createListing, lookupAddress, type ListingState } from "../actions";
+import { PhotoField } from "@/app/photo-field";
 import type { GeocodeResult } from "@/lib/geocode";
 import { EXCLUSIONS } from "@/lib/db/schema";
 import {
@@ -266,6 +267,14 @@ function DetailsStep({ address, onBack }: { address: GeocodeResult; onBack: () =
           Overhead clearance and driveway width are the two things that turn a
           driver around on arrival. Mention them.
         </p>
+
+        <div className="mt-6">
+          <PhotoField
+            name="photo"
+            label="Photo of the spot"
+            hint="Worth more than anything else on this page. Stand where the truck would park and shoot towards the drop spot, so the driver can see the width, the surface and anything overhead. Drivers see this before they commit."
+          />
+        </div>
       </fieldset>
 
       {/* Pre-auth ---------------------------------------------------------- */}

@@ -15,7 +15,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "verify:images": "tsx scripts/verify-images.ts",
+    "verify": "npm run verify:geo && npm run verify:images"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
@@ -27,6 +29,7 @@
     "postmark": "^5.1.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "sharp": "^0.35.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {

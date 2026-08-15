@@ -28,6 +28,10 @@ const schema = z.object({
 
   CRON_SECRET: z.string().optional(),
 
+  // Photo storage. On Railway this MUST point at a mounted volume, or every
+  // deploy wipes uploaded photos along with the container filesystem.
+  UPLOAD_DIR: z.string().default("./.uploads"),
+
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
 });
 

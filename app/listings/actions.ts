@@ -8,6 +8,8 @@ import { db } from "@/lib/db";
 import { EXCLUSIONS, listings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { fuzzCoords } from "@/lib/geo";
+import { ImageError, processUploadedImage } from "@/lib/images";
+import { deleteObject, newKey, putObject } from "@/lib/storage";
 import { geocodeAddress, type GeocodeResult } from "@/lib/geocode";
 import { DROP_SPOT_KEYS, VOLUME_TIER_KEYS, tierMaxM3 } from "@/lib/listing-options";
 
@@ -93,6 +95,20 @@ export async function createListing(
   const approx = fuzzCoords({ lat: d.lat, lng: d.lng });
   const maxM3 = tierMaxM3(d.tier);
 
+  let photoKey: string | null = null;
+  const photo = formData.get("photo");
+  if (photo instanceof File && photo.size > 0) {
+    try {
+      const processed = await processUploadedImage(await photo.arrayBuffer());
+      photoKey = newKey("listing");
+      await putObject(photoKey, processed.data);
+    } catch (err) {
+      if (err instanceof ImageError) return { error: err.message };
+      console.error("listing photo upload failed", err);
+      return { error: "We couldn't save that photo. Try again, or skip it for now." };
+    }
+  }
+
   await db.insert(listings).values({
     userId: user.id,
     addressLine: d.addressLine,
@@ -108,6 +124,7 @@ export async function createListing(
     excludes: d.excludes,
     dropSpot: d.dropSpot,
     accessNotes: d.accessNotes ?? null,
+    photoKey,
     preAuthorised: d.preAuthorised,
   });
 
@@ -142,7 +159,11 @@ export async function confirmStillWanted(listingId: string) {
 
 export async function deleteListing(listingId: string) {
   const { where } = await ownedListing(listingId);
+  // Remove the file too — a deleted listing shouldn't leave a photo of
+  // someone's driveway sitting on disk indefinitely.
+  const [row] = await db.select({ photoKey: listings.photoKey }).from(listings).where(where);
   await db.delete(listings).where(where);
+  if (row?.photoKey) await deleteObject(row.photoKey);
   revalidatePath("/dashboard");
   redirect("/dashboard");
 }

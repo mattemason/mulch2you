@@ -116,16 +116,47 @@ phone. Those are released by the drop-acceptance path and nowhere else.
 someone is signed in. Authority checks use `getCurrentUser()` / `isApprovedSupplier()`
 so a token minted before approval can't keep asserting stale access.
 
-## Verifying the geo query
+## Verification scripts
 
 ```bash
-npm run verify:geo
+npm run verify        # both of the below
 ```
 
-Applies the real migrations to a throwaway in-process Postgres (PGlite — no
-Docker, no install), seeds listings at real Blue Mountains coordinates, and
-asserts the radius search, ordering, filters and the privacy guarantee. Run it
-after touching `lib/geo.ts`, `lib/db/queries.ts` or anything in `drizzle/`.
+`verify:geo` applies the real migrations to a throwaway in-process Postgres
+(PGlite — no Docker, no install), seeds listings at real Blue Mountains
+coordinates, and asserts the radius search, ordering, filters and the privacy
+guarantee. Run after touching `lib/geo.ts`, `lib/db/queries.ts` or `drizzle/`.
+
+`verify:images` stamps a JPEG with camera and GPS EXIF, pushes it through the
+upload pipeline, and asserts none of it survives — plus that oversized files,
+non-images and path-traversal storage keys are all rejected. Run after touching
+`lib/images.ts` or `lib/storage.ts`.
+
+## Photos
+
+Two photos matter, and neither is ever served from a public URL — a driveway
+plus a suburb identifies a house, so `/api/photos/[...key]` decides per object:
+a listing photo goes to its owner or any approved supplier, a proof photo only
+to the two parties to that drop.
+
+**Drop-spot photo** (receiver, at listing time) — shown to drivers on the map
+before they commit. Overhead clearance and driveway width are what turn a truck
+around on arrival, and a photo shows both.
+
+**Proof photo** (supplier, on delivery) — mandatory to mark a drop delivered.
+It's the evidence in a dispute and the event that will trigger payment.
+
+Uploads are downscaled in the browser first (a driver on 4G won't wait for 6 MB)
+then re-encoded server-side with `sharp`. The re-encode is load-bearing, not
+cosmetic: phone cameras write GPS coordinates into EXIF by default, so an
+un-stripped drop-spot photo would hand suppliers the exact address of a house
+whose pin we deliberately fuzz to ~300 m.
+
+> **Railway: mount a volume.** Container filesystems are ephemeral. Add a volume
+> under service → Settings → Volumes, mount it at `/data`, and set
+> `UPLOAD_DIR=/data`. Without it every deploy deletes every uploaded photo.
+> Object storage (R2/S3) is the right move once volume grows — `lib/storage.ts`
+> is the only file that needs to change.
 
 ## Status
 

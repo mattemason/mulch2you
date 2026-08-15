@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   GeolocateControl,
   Map as MapLibreMap,
@@ -13,6 +14,7 @@ import type { NearbyListing } from "@/lib/db/queries";
 import { formatDistance, type Coords } from "@/lib/geo";
 import { DROP_SPOTS, EXCLUSION_LABELS, VOLUME_TIERS, type DropSpotKey } from "@/lib/listing-options";
 import type { Exclusion } from "@/lib/db/schema";
+import { claimListing } from "@/app/drops/actions";
 
 /** Sydney GPO — only used if the browser won't or can't give up a location. */
 const FALLBACK_CENTRE: Coords = { lat: -33.8688, lng: 151.2093 };
@@ -263,6 +265,18 @@ function Toggle({
 function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () => void }) {
   const tier = VOLUME_TIERS[listing.tier];
   const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
+  const router = useRouter();
+  const [claiming, startClaim] = useTransition();
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  function onClaim() {
+    setClaimError(null);
+    startClaim(async () => {
+      const res = await claimListing(listing.id);
+      if (res.error) setClaimError(res.error);
+      else if (res.dropId) router.push(`/drops/${res.dropId}`);
+    });
+  }
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-20 p-3">
@@ -308,12 +322,51 @@ function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () =>
           )}
         </div>
 
-        <button type="button" disabled className="btn-primary mt-5 w-full">
-          {listing.preAuthorised ? "⚡ Claim this drop" : "Offer a drop"}
-        </button>
-        <p className="mt-2 text-center text-xs text-muted">
-          Claiming and offers land in the next build.
-        </p>
+        {listing.photoKey && (
+          <figure className="mt-4">
+            <figcaption className="mb-1.5 text-xs font-medium text-muted">
+              Where they want it tipped
+            </figcaption>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/photos/${listing.photoKey}`}
+              alt="The spot the gardener wants the mulch tipped"
+              loading="lazy"
+              className="w-full rounded-lg border border-border"
+            />
+          </figure>
+        )}
+
+        {listing.preAuthorised ? (
+          <>
+            <button
+              type="button"
+              onClick={onClaim}
+              disabled={claiming}
+              className="btn-primary mt-5 w-full"
+            >
+              {claiming ? "Claiming…" : "⚡ Claim this drop"}
+            </button>
+            <p className="mt-2 text-center text-xs text-muted">
+              You&apos;ll get the street address straight away.
+            </p>
+          </>
+        ) : (
+          <>
+            <button type="button" disabled className="btn-primary mt-5 w-full">
+              Offer a drop
+            </button>
+            <p className="mt-2 text-center text-xs text-muted">
+              This gardener wants to approve first — that loop lands next.
+            </p>
+          </>
+        )}
+
+        {claimError && (
+          <p className="mt-3 rounded-lg border border-border bg-background p-3 text-sm text-accent">
+            {claimError}
+          </p>
+        )}
       </div>
     </div>
   );
