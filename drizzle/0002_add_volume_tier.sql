@@ -1,0 +1,1 @@
+ALTER TABLE "listings" ADD COLUMN "tier" "volume_tier" DEFAULT 'medium' NOT NULL;

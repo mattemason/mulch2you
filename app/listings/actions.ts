@@ -1,0 +1,148 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "@/lib/db";
+import { EXCLUSIONS, listings } from "@/lib/db/schema";
+import { getCurrentUser } from "@/lib/session";
+import { fuzzCoords } from "@/lib/geo";
+import { geocodeAddress, type GeocodeResult } from "@/lib/geocode";
+import { DROP_SPOT_KEYS, VOLUME_TIER_KEYS, tierMaxM3 } from "@/lib/listing-options";
+
+export type LookupState = { results?: GeocodeResult[]; error?: string };
+
+export async function lookupAddress(query: string): Promise<LookupState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Please sign in again." };
+
+  try {
+    const results = await geocodeAddress(query);
+    if (results.length === 0) {
+      return {
+        error:
+          "Couldn't find that address. Try including the suburb and postcode, e.g. \"12 Smith St, Katoomba NSW 2780\".",
+      };
+    }
+    return { results };
+  } catch (err) {
+    console.error("geocode failed", err);
+    return { error: "Address lookup is temporarily unavailable. Try again in a moment." };
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Coordinates arrive from the client because they came from a lookup the user
+ * confirmed. Spoofing them only moves the user's own pin, but a sanity check
+ * against Australia's bounding box stops a fat-fingered or malicious value
+ * putting a listing in the Atlantic where it clutters every radius query.
+ */
+const AU_BOUNDS = { minLat: -44, maxLat: -9, minLng: 112, maxLng: 154 };
+
+const listingSchema = z.object({
+  addressLine: z.string().trim().min(3),
+  suburb: z.string().trim().min(2),
+  state: z.string().trim().min(2).max(3),
+  postcode: z.string().trim().regex(/^\d{4}$/, "Postcode should be four digits"),
+  lat: z.coerce.number().min(AU_BOUNDS.minLat).max(AU_BOUNDS.maxLat),
+  lng: z.coerce.number().min(AU_BOUNDS.minLng).max(AU_BOUNDS.maxLng),
+  tier: z.enum(VOLUME_TIER_KEYS),
+  dropSpot: z.enum(DROP_SPOT_KEYS),
+  accessNotes: z.string().trim().max(500).optional(),
+  excludes: z.array(z.enum(EXCLUSIONS)).default([]),
+  preAuthorised: z.boolean().default(false),
+});
+
+export type ListingState = { error?: string };
+
+export async function createListing(
+  _prev: ListingState,
+  formData: FormData,
+): Promise<ListingState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+  if (user.role !== "receiver") {
+    return { error: "Only gardener accounts can create listings." };
+  }
+
+  const parsed = listingSchema.safeParse({
+    addressLine: formData.get("addressLine"),
+    suburb: formData.get("suburb"),
+    state: formData.get("state"),
+    postcode: formData.get("postcode"),
+    lat: formData.get("lat"),
+    lng: formData.get("lng"),
+    tier: formData.get("tier"),
+    dropSpot: formData.get("dropSpot"),
+    accessNotes: formData.get("accessNotes") || undefined,
+    excludes: formData.getAll("excludes"),
+    preAuthorised: formData.get("preAuthorised") === "on",
+  });
+
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { error: issue.message === "Required" ? "Please complete every step." : issue.message };
+  }
+
+  const d = parsed.data;
+  // Fuzz once, at creation. Re-fuzzing per request would let anyone average a
+  // handful of reads back to the true position.
+  const approx = fuzzCoords({ lat: d.lat, lng: d.lng });
+  const maxM3 = tierMaxM3(d.tier);
+
+  await db.insert(listings).values({
+    userId: user.id,
+    addressLine: d.addressLine,
+    suburb: d.suburb,
+    state: d.state,
+    postcode: d.postcode,
+    lat: d.lat,
+    lng: d.lng,
+    approxLat: approx.lat,
+    approxLng: approx.lng,
+    tier: d.tier,
+    maxVolumeM3: maxM3 === null ? null : String(maxM3),
+    excludes: d.excludes,
+    dropSpot: d.dropSpot,
+    accessNotes: d.accessNotes ?? null,
+    preAuthorised: d.preAuthorised,
+  });
+
+  redirect("/dashboard");
+}
+
+/* -------------------------------------------------------------------------- */
+
+/** Every mutation below scopes on userId as well as id — never trust the id alone. */
+async function ownedListing(listingId: string) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+  return { user, where: and(eq(listings.id, listingId), eq(listings.userId, user.id)) };
+}
+
+export async function setListingStatus(listingId: string, status: "active" | "paused") {
+  const { where } = await ownedListing(listingId);
+  await db
+    .update(listings)
+    // Coming back from paused counts as confirming the pin is still wanted,
+    // which resets the 30-day staleness clock.
+    .set(status === "active" ? { status, confirmedAt: new Date() } : { status })
+    .where(where);
+  revalidatePath("/dashboard");
+}
+
+export async function confirmStillWanted(listingId: string) {
+  const { where } = await ownedListing(listingId);
+  await db.update(listings).set({ confirmedAt: new Date() }).where(where);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteListing(listingId: string) {
+  const { where } = await ownedListing(listingId);
+  await db.delete(listings).where(where);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}

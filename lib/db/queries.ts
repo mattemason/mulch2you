@@ -10,8 +10,8 @@ export type NearbyListing = {
   postcode: string;
   approxLat: number;
   approxLng: number;
+  tier: "small" | "medium" | "large" | "unlimited";
   maxVolumeM3: string | null;
-  minVolumeM3: string | null;
   excludes: string[];
   dropSpot: string;
   accessNotes: string | null;
@@ -43,6 +43,9 @@ export type NearbyOptions = {
 export async function findNearbyListings(
   origin: Coords,
   opts: NearbyOptions = {},
+  // Injectable so the geo query can be exercised against a throwaway Postgres
+  // in scripts/verify-geo.ts. Production always uses the shared pool.
+  database: typeof db = db,
 ): Promise<NearbyListing[]> {
   const { radiusKm = 25, minCapacityM3, preAuthorisedOnly = false, limit = 200 } = opts;
   const box = boundingBox(origin, radiusKm);
@@ -54,7 +57,7 @@ export async function findNearbyListings(
       + sin(radians(${origin.lat})) * sin(radians(${listings.approxLat}))
     ))`;
 
-  const rows = await db
+  const rows = await database
     .select({
       id: listings.id,
       suburb: listings.suburb,
@@ -62,8 +65,8 @@ export async function findNearbyListings(
       postcode: listings.postcode,
       approxLat: listings.approxLat,
       approxLng: listings.approxLng,
+      tier: listings.tier,
       maxVolumeM3: listings.maxVolumeM3,
-      minVolumeM3: listings.minVolumeM3,
       excludes: listings.excludes,
       dropSpot: listings.dropSpot,
       accessNotes: listings.accessNotes,

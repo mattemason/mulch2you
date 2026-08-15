@@ -5,6 +5,7 @@ import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { listings } from "@/lib/db/schema";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
+import { VOLUME_TIERS } from "@/lib/listing-options";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -73,12 +74,12 @@ async function ReceiverPanel({ userId }: { userId: string }) {
               {l.suburb} {l.state} {l.postcode}
             </div>
             <div className="mt-0.5 text-sm text-muted">
-              {l.maxVolumeM3 ? `Up to ${l.maxVolumeM3} m³` : "Unlimited"}
+              {VOLUME_TIERS[l.tier].label}
               {l.preAuthorised && " · drop anytime"} · {l.status}
             </div>
           </div>
           <Link href={`/listings/${l.id}`} className="text-sm text-brand hover:underline">
-            Edit
+            Manage
           </Link>
         </li>
       ))}

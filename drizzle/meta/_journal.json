@@ -8,6 +8,20 @@
       "when": 1786770736803,
       "tag": "0000_illegal_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786825829191,
+      "tag": "0001_drop_min_volume",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786825843764,
+      "tag": "0002_add_volume_tier",
+      "breakpoints": true
     }
   ]
 }

@@ -109,8 +109,33 @@ phone. Those are released by the drop-acceptance path and nowhere else.
 someone is signed in. Authority checks use `getCurrentUser()` / `isApprovedSupplier()`
 so a token minted before approval can't keep asserting stale access.
 
+## Verifying the geo query
+
+```bash
+npm run verify:geo
+```
+
+Applies the real migrations to a throwaway in-process Postgres (PGlite — no
+Docker, no install), seeds listings at real Blue Mountains coordinates, and
+asserts the radius search, ordering, filters and the privacy guarantee. Run it
+after touching `lib/geo.ts`, `lib/db/queries.ts` or anything in `drizzle/`.
+
 ## Status
 
-Phase 0 complete: auth, schema, migrations, deploy config. Next up is Phase 1 —
-address autocomplete, the listing wizard with drop-spot photo, and the supplier
-map. See the plan for the full sequence.
+**Phase 0 — done.** Auth, schema, migrations, deploy config.
+
+**Phase 1 — done.** Address lookup and geocoding, listing wizard, listing
+management with pause/delete, the nearby API, and the supplier map with
+GPS centring and filters.
+
+**Phase 2 — next.** The offer/claim loop: SMS + email with one-tap accept,
+contact exchange on acceptance, offer expiry. Then drop-spot photo upload
+(needs object storage) and Stripe on delivery confirmation.
+
+### Keys still to add
+
+| Variable | Without it | Get it from |
+| --- | --- | --- |
+| `GOOGLE_MAPS_KEY` | Address lookup falls back to OpenStreetMap — fine for testing, patchy on new estates and units | Google Cloud Console (Geocoding API) |
+| `MAPTILER_KEY` | Map uses raw OSM raster tiles, whose usage policy **does not permit production traffic** | maptiler.com |
+| `TWILIO_*` | No SMS, so the Phase 2 accept loop is email-only | twilio.com |

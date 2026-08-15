@@ -27,6 +27,13 @@ export const userRole = pgEnum("user_role", ["receiver", "supplier", "admin"]);
 
 export const listingStatus = pgEnum("listing_status", ["active", "paused", "fulfilled"]);
 
+/**
+ * How much the receiver will take. A band rather than a number, because it's
+ * what the receiver is billed against and nobody can verify delivered volume.
+ * Ceilings and prices live in lib/listing-options.ts.
+ */
+export const volumeTier = pgEnum("volume_tier", ["small", "medium", "large", "unlimited"]);
+
 export const dropStatus = pgEnum("drop_status", [
   "offered",
   "accepted",
@@ -167,10 +174,14 @@ export const listings = pgTable(
     approxLat: doublePrecision("approx_lat").notNull(),
     approxLng: doublePrecision("approx_lng").notNull(),
 
-    /** Null means unlimited — community gardens, farms, Landcare sites. */
+    // Default exists only so the column can be added NOT NULL; every write
+    // path sets it explicitly from the tier the receiver picked.
+    tier: volumeTier("tier").notNull().default("medium"),
+    /**
+     * Denormalised ceiling from the tier, so the map's "takes a full truck"
+     * filter is a plain indexed comparison. Null means unlimited.
+     */
     maxVolumeM3: numeric("max_volume_m3", { precision: 5, scale: 1 }),
-    /** Not worth a truck rolling out for less than this. */
-    minVolumeM3: numeric("min_volume_m3", { precision: 5, scale: 1 }),
 
     excludes: text("excludes").array().notNull().default([]),
     dropSpot: dropSpot("drop_spot").notNull(),
