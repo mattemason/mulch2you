@@ -6,13 +6,13 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Mulch2You — free wood chip, straight from the truck",
+  title: "Mulch2You — we deliver, you benefit",
   description:
     "Connects arborists with a full truck of wood chip to gardeners who want it. Free mulch for gardens, no tip fees for tree crews.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2f7a3f",
+  themeColor: "#385020",
   // Suppliers use this outdoors on a phone; let them zoom.
   width: "device-width",
   initialScale: 1,

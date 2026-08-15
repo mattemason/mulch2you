@@ -11,6 +11,18 @@ export { parseStreetNumber } from "@/lib/address";
 /** Australia's bounding box, west/south/east/north — used to bias Photon. */
 const AU_BBOX = "112,-44,154,-9";
 
+/** Carries the provider's own words so /admin can show what actually failed. */
+export class GeocodeError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly providerMessage: string,
+  ) {
+    super(message);
+    this.name = "GeocodeError";
+  }
+}
+
 export function geocoderName(): "Google" | "Photon" {
   return env.GOOGLE_MAPS_KEY ? "Google" : "Photon";
 }
@@ -84,8 +96,11 @@ async function googleAutocomplete(
     body: JSON.stringify({
       input,
       includedRegionCodes: ["au"],
-      // Addresses only — no cafés, no parks. A truck is going to a property.
-      includedPrimaryTypes: ["street_address", "premise", "subpremise", "route"],
+      // Deliberately no includedPrimaryTypes. Places (New) only accepts values
+      // from its own type tables, and address-shaped ones like "street_address"
+      // or "route" aren't among them — sending those returns INVALID_REQUEST
+      // and every lookup fails. Non-address predictions are filtered later
+      // instead: resolving one requires a route, locality and postcode.
       ...(sessionToken ? { sessionToken } : {}),
     }),
     cache: "no-store",
@@ -93,8 +108,10 @@ async function googleAutocomplete(
 
   const data = (await res.json()) as GoogleAutocompleteResponse;
   if (!res.ok) {
-    throw new Error(
-      `Google Places autocomplete ${res.status}: ${data.error?.message ?? "unknown error"}`,
+    throw new GeocodeError(
+      explainGoogleFailure(res.status),
+      res.status,
+      data.error?.message ?? "no message returned",
     );
   }
 
@@ -107,6 +124,16 @@ async function googleAutocomplete(
       secondary: (p.structuredFormat?.secondaryText?.text ?? "").replace(/, Australia$/, ""),
     }))
     .slice(0, 5);
+}
+
+/** Turns an HTTP status into the thing that's actually misconfigured. */
+function explainGoogleFailure(status: number): string {
+  if (status === 400) return "Google rejected the request as malformed.";
+  if (status === 401 || status === 403) {
+    return "Google refused the key. Usually: Places API (New) not enabled, no billing account attached, or an application restriction (referrer/IP) blocking server-side calls.";
+  }
+  if (status === 429) return "Google rate-limited the key.";
+  return `Google returned HTTP ${status}.`;
 }
 
 type GooglePlaceDetails = {
@@ -133,7 +160,11 @@ async function googlePlaceDetails(
 
   const data = (await res.json()) as GooglePlaceDetails;
   if (!res.ok) {
-    throw new Error(`Google place details ${res.status}: ${data.error?.message ?? "unknown"}`);
+    throw new GeocodeError(
+      explainGoogleFailure(res.status),
+      res.status,
+      data.error?.message ?? "no message returned",
+    );
   }
 
   const components = data.addressComponents ?? [];

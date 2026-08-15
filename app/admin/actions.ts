@@ -4,9 +4,10 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { supplierProfiles, users } from "@/lib/db/schema";
+import { listings, supplierProfiles, users } from "@/lib/db/schema";
 import { getCurrentUser, isAdmin } from "@/lib/session";
 import { sendSupplierApprovedEmail } from "@/lib/email";
+import { GeocodeError, geocoderName, suggestAddresses } from "@/lib/geocode";
 import { env } from "@/lib/env";
 
 export type AdminResult = { error?: string; ok?: string };
@@ -67,6 +68,75 @@ export async function revokeSupplier(userId: string): Promise<AdminResult> {
 
   revalidatePath("/admin");
   return { ok: "Access revoked." };
+}
+
+/**
+ * Admin override for a listing's status — for pins that are clearly abandoned,
+ * abusive, or where the owner has asked by phone. Unlike the owner's own
+ * control this isn't scoped by userId, which is exactly why it re-checks admin.
+ */
+export async function adminSetListingStatus(
+  listingId: string,
+  status: "active" | "paused",
+): Promise<AdminResult> {
+  const admin = await getCurrentUser();
+  if (!isAdmin(admin)) return { error: "Not authorised." };
+
+  await db
+    .update(listings)
+    // Reactivating counts as confirming the pin is still wanted, so the
+    // staleness clock restarts rather than immediately re-pausing it.
+    .set(status === "active" ? { status, confirmedAt: new Date() } : { status })
+    .where(eq(listings.id, listingId));
+
+  revalidatePath("/admin/listings");
+  return { ok: status === "active" ? "Reactivated." : "Paused." };
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type GeocoderTest = {
+  ok: boolean;
+  provider: string;
+  count: number;
+  sample?: string;
+  summary?: string;
+  detail?: string;
+};
+
+/** A real address, so the test exercises the same path a gardener would. */
+const TEST_QUERY = "95 Eumundi Noosa Road Noosaville";
+
+export async function testGeocoder(): Promise<GeocoderTest> {
+  const admin = await getCurrentUser();
+  const provider = geocoderName();
+  if (!isAdmin(admin)) return { ok: false, provider, count: 0, summary: "Not authorised." };
+
+  try {
+    const results = await suggestAddresses(TEST_QUERY, crypto.randomUUID());
+    return {
+      ok: results.length > 0,
+      provider,
+      count: results.length,
+      sample: results[0] ? `${results[0].primary} — ${results[0].secondary}` : undefined,
+      summary: results.length === 0 ? "The provider answered but matched nothing." : undefined,
+    };
+  } catch (err) {
+    // Surface the provider's own words here — this screen exists precisely so
+    // a misconfiguration doesn't have to be guessed at from a log.
+    const isGeocode = err instanceof GeocodeError;
+    return {
+      ok: false,
+      provider,
+      count: 0,
+      summary: isGeocode ? err.message : "The lookup threw before reaching the provider.",
+      detail: isGeocode
+        ? `HTTP ${err.status}\n${err.providerMessage}`
+        : err instanceof Error
+          ? err.message
+          : String(err),
+    };
+  }
 }
 
 async function baseUrl(): Promise<string> {

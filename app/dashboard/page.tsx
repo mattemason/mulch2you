@@ -5,6 +5,7 @@ import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { listings } from "@/lib/db/schema";
 import { getCurrentUser, isAdmin, isApprovedSupplier } from "@/lib/session";
+import { Wordmark } from "@/app/logo";
 import { MATERIALS_WANTED, VOLUME_TIERS } from "@/lib/listing-options";
 
 export default async function DashboardPage() {
@@ -16,9 +17,7 @@ export default async function DashboardPage() {
     <main className="flex-1">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-bold tracking-tight">
-            Mulch<span className="text-brand">2</span>You
-          </Link>
+          <Wordmark className="h-7" priority />
           <form
             action={async () => {
               "use server";

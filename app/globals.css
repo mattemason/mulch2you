@@ -1,26 +1,34 @@
 @import "tailwindcss";
 
+/**
+ * Sampled from the logo rather than guessed: #385020 is the wordmark's green
+ * and the truck tray, #202020 the charcoal lettering, #483018 the mulch pile.
+ * Regenerate with scripts/build-brand-assets.mjs if the logo changes.
+ */
 :root {
   --background: #f7f8f5;
-  --foreground: #16241b;
+  --foreground: #1c1f1b;
   --card: #ffffff;
-  --border: #e0e5dd;
-  --muted: #64756a;
-  --brand: #2f7a3f;
+  --border: #e1e5dc;
+  --muted: #66756a;
+  --brand: #385020;
   --brand-fg: #ffffff;
-  --accent: #b4791f;
+  --accent: #8a5a2a;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0e130f;
-    --foreground: #e6ece7;
-    --card: #161d18;
-    --border: #26302a;
-    --muted: #93a398;
-    --brand: #4f9e5f;
-    --brand-fg: #08120a;
-    --accent: #d19a3d;
+    --foreground: #e8ece6;
+    --card: #171d16;
+    --border: #283022;
+    --muted: #95a394;
+    /* The logo green is too dark to read on a dark ground; this is the same
+       lightened value baked into public/wordmark-dark.png, so the brand colour
+       in the UI and in the logo stay the same green. */
+    --brand: #8fbf63;
+    --brand-fg: #0d1408;
+    --accent: #d9a05a;
   }
 }
 

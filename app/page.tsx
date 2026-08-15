@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
+import { FullLogo, Wordmark } from "@/app/logo";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -8,9 +9,7 @@ export default async function HomePage() {
     <main className="flex-1">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-bold tracking-tight">
-            Mulch<span className="text-brand">2</span>You
-          </span>
+          <Wordmark className="h-7" href={null} priority />
           <Link href={user ? "/dashboard" : "/signin"} className="btn-secondary py-2 text-sm">
             {user ? "Dashboard" : "Sign in"}
           </Link>
@@ -18,6 +17,7 @@ export default async function HomePage() {
       </header>
 
       <section className="mx-auto max-w-5xl px-6 py-16 sm:py-24">
+        <FullLogo className="mb-10 h-auto w-full max-w-md rounded-xl bg-white p-4 shadow-sm" />
         <h1 className="max-w-2xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
           Free wood chip, straight from the truck.
         </h1>

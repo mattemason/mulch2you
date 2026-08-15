@@ -1,136 +1,133 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { supplierProfiles, users } from "@/lib/db/schema";
-import { getCurrentUser, isAdmin } from "@/lib/session";
-import { formatAuMobile } from "@/lib/phone";
-import { ApprovalButton } from "./approval-button";
+import { drops, listings, supplierProfiles, users } from "@/lib/db/schema";
+import { geocoderName } from "@/lib/geocode";
+import { env } from "@/lib/env";
+import { Diagnostics } from "./diagnostics";
 
-export default async function AdminPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/signin");
-  // 404 rather than 403: no reason to advertise that an admin area exists.
-  if (!isAdmin(user)) notFound();
+type Tally = { key: string | null; n: number };
 
-  const select = {
-    userId: supplierProfiles.userId,
-    businessName: supplierProfiles.businessName,
-    abn: supplierProfiles.abn,
-    verifiedAt: supplierProfiles.verifiedAt,
-    createdAt: supplierProfiles.createdAt,
-    name: users.name,
-    email: users.email,
-    phone: users.phone,
-  };
+const tally = (rows: Tally[], key: string) => rows.find((r) => r.key === key)?.n ?? 0;
+const total = (rows: Tally[]) => rows.reduce((sum, r) => sum + r.n, 0);
 
-  const [pending, approved] = await Promise.all([
+export default async function AdminOverviewPage() {
+  const [listingRows, dropRows, userRows, supplierRows] = await Promise.all([
     db
-      .select(select)
-      .from(supplierProfiles)
-      .innerJoin(users, eq(users.id, supplierProfiles.userId))
-      .where(isNull(supplierProfiles.verifiedAt))
-      .orderBy(desc(supplierProfiles.createdAt)),
+      .select({ key: listings.status, n: sql<number>`count(*)::int` })
+      .from(listings)
+      .groupBy(listings.status),
+    db.select({ key: drops.status, n: sql<number>`count(*)::int` }).from(drops).groupBy(drops.status),
+    db.select({ key: users.role, n: sql<number>`count(*)::int` }).from(users).groupBy(users.role),
     db
-      .select(select)
+      .select({
+        key: sql<string>`case when ${supplierProfiles.verifiedAt} is null then 'pending' else 'approved' end`,
+        n: sql<number>`count(*)::int`,
+      })
       .from(supplierProfiles)
-      .innerJoin(users, eq(users.id, supplierProfiles.userId))
-      .where(isNotNull(supplierProfiles.verifiedAt))
-      .orderBy(desc(supplierProfiles.verifiedAt)),
+      .groupBy(sql`case when ${supplierProfiles.verifiedAt} is null then 'pending' else 'approved' end`),
   ]);
 
+  const pending = tally(supplierRows, "pending");
+
   return (
-    <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
-            ← Dashboard
-          </Link>
-          <span className="text-sm font-semibold">Admin</span>
-        </div>
-      </header>
+    <>
+      <h1 className="text-2xl font-semibold">Overview</h1>
 
-      <div className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="text-2xl font-semibold">Tree services</h1>
-        <p className="mt-2 text-sm text-muted">
-          Approving a business lets it see the approximate location of every
-          active pin. Check the ABN resolves to a real tree service before you
-          do — that&apos;s the whole reason this isn&apos;t automatic.
-        </p>
+      {pending > 0 && (
+        <Link
+          href="/admin/suppliers"
+          className="card mt-6 flex items-center justify-between gap-4 border-brand transition-colors hover:bg-background"
+        >
+          <div>
+            <div className="font-medium">
+              {pending} tree {pending === 1 ? "service is" : "services are"} waiting for approval
+            </div>
+            <div className="mt-0.5 text-sm text-muted">
+              They can&apos;t see a single pin until you approve them.
+            </div>
+          </div>
+          <span aria-hidden className="text-xl text-brand">
+            →
+          </span>
+        </Link>
+      )}
 
-        <section className="mt-8">
-          <h2 className="font-semibold">
-            Waiting on you{pending.length > 0 && ` (${pending.length})`}
-          </h2>
-          {pending.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">Nothing pending.</p>
-          ) : (
-            <ul className="mt-3 space-y-3">
-              {pending.map((s) => (
-                <SupplierCard key={s.userId} supplier={s} approved={false} />
-              ))}
-            </ul>
-          )}
-        </section>
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Gardeners" value={tally(userRows, "receiver")} />
+        <Stat label="Tree services" value={tally(userRows, "supplier")} hint={`${tally(supplierRows, "approved")} approved`} />
+        <Stat label="Active pins" value={tally(listingRows, "active")} hint={`${total(listingRows)} all up`} />
+        <Stat
+          label="Drops delivered"
+          value={tally(dropRows, "completed")}
+          hint={`${tally(dropRows, "accepted")} in progress`}
+        />
+      </section>
 
-        <section className="mt-10">
-          <h2 className="font-semibold">Approved ({approved.length})</h2>
-          {approved.length === 0 ? (
-            <p className="mt-2 text-sm text-muted">None yet.</p>
-          ) : (
-            <ul className="mt-3 space-y-3">
-              {approved.map((s) => (
-                <SupplierCard key={s.userId} supplier={s} approved />
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-    </main>
+      <section className="mt-10 grid gap-6 sm:grid-cols-2">
+        <Breakdown title="Listings" rows={listingRows} empty="Nobody has listed a pin yet." />
+        <Breakdown title="Drops" rows={dropRows} empty="No drops yet." />
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-semibold">Configuration</h2>
+        <dl className="card mt-3 space-y-2 text-sm">
+          <Row label="Address lookup">{geocoderName()}</Row>
+          <Row label="Map tiles">
+            {env.MAPTILER_KEY ? "MapTiler" : "OpenStreetMap raster — not licensed for production"}
+          </Row>
+          <Row label="Outbound email">
+            {env.POSTMARK_SERVER_TOKEN ? `Postmark, from ${env.EMAIL_FROM}` : "Not configured"}
+          </Row>
+          <Row label="SMS">{env.TWILIO_ACCOUNT_SID ? "Twilio" : "Not configured"}</Row>
+          <Row label="Photo storage">{env.UPLOAD_DIR}</Row>
+          <Row label="Public URL">{env.AUTH_URL ?? "Derived from request headers"}</Row>
+        </dl>
+      </section>
+
+      <Diagnostics />
+    </>
   );
 }
 
-type Supplier = {
-  userId: string;
-  businessName: string;
-  abn: string | null;
-  name: string | null;
-  email: string | null;
-  phone: string | null;
-  createdAt: Date;
-};
-
-function SupplierCard({ supplier, approved }: { supplier: Supplier; approved: boolean }) {
+function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
   return (
-    <li className="card flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
-        <div className="font-medium">{supplier.businessName}</div>
-        <div className="mt-1 space-y-0.5 text-sm text-muted">
-          <div>
-            {supplier.name}
-            {supplier.email && ` · ${supplier.email}`}
-          </div>
-          <div>
-            {supplier.phone ? formatAuMobile(supplier.phone) : "No mobile"}
-            {supplier.abn ? (
-              <>
-                {" · ABN "}
-                <a
-                  href={`https://abr.business.gov.au/ABN/View?abn=${supplier.abn}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-brand hover:underline"
-                >
-                  {supplier.abn}
-                </a>
-              </>
-            ) : (
-              " · no ABN given"
-            )}
-          </div>
-        </div>
-      </div>
-      <ApprovalButton userId={supplier.userId} approved={approved} />
-    </li>
+    <div className="card">
+      <div className="text-sm text-muted">{label}</div>
+      <div className="mt-1 text-3xl font-semibold tabular-nums">{value}</div>
+      {hint && <div className="mt-0.5 text-xs text-muted">{hint}</div>}
+    </div>
+  );
+}
+
+function Breakdown({ title, rows, empty }: { title: string; rows: Tally[]; empty: string }) {
+  return (
+    <div>
+      <h2 className="font-semibold">{title}</h2>
+      {rows.length === 0 ? (
+        <p className="mt-2 text-sm text-muted">{empty}</p>
+      ) : (
+        <ul className="card mt-3 space-y-1.5 text-sm">
+          {rows
+            .slice()
+            .sort((a, b) => b.n - a.n)
+            .map((r) => (
+              <li key={r.key} className="flex justify-between gap-4">
+                <span className="text-muted">{r.key?.replace(/_/g, " ") ?? "unknown"}</span>
+                <span className="tabular-nums">{r.n}</span>
+              </li>
+            ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap justify-between gap-2">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right">{children}</dd>
+    </div>
   );
 }

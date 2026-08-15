@@ -183,15 +183,38 @@ confirms it. Coordinates only need to be street-accurate — pins are fuzzed
 The address step footer names the live provider, which is the quickest way to
 confirm a key took effect.
 
-## Approving tree services
+## Admin
 
-Suppliers can't see a single pin until a human approves them — pins are
-people's homes. Set `ADMIN_EMAILS` to your sign-in address and `/admin` appears,
-listing pending businesses with a link to look each ABN up on the ABR. Approving
-sends them the "you're in" email the dashboard promises.
+Set `ADMIN_EMAILS` to your sign-in address and `/admin` appears, linked from the
+dashboard. Config rather than a database column on purpose: a flag in the
+database has no way to grant itself the first time. `app/admin/layout.tsx` holds
+one guard for the whole area, and every action re-checks independently.
 
-`ADMIN_EMAILS` is config rather than a database column on purpose: a flag in the
-database has no way to grant itself the first time.
+| Tab | What it's for |
+| --- | --- |
+| Overview | Counts, live configuration, and diagnostics |
+| Tree services | Approve or revoke, with ABN links to the ABR |
+| Listings | Every pin with owner contact details, drop-spot photo, staleness, and a pause/reactivate override |
+| Drops | Every claim and delivery with proof photos — the record to check on a disputed load |
+
+Approving a supplier is the moment they gain sight of strangers' home
+locations, which is why it stays a human decision. It also sends the "you're
+in" email the supplier dashboard promises.
+
+**Diagnostics** on the overview tab runs a live address lookup and prints the
+provider's own error. Ordinary users get a deliberately vague "temporarily
+unavailable" because they can't act on more; nearly every real failure is a
+missing API enablement, an unattached billing account, or a key restriction,
+and the provider names which.
+
+## Brand assets
+
+`node scripts/build-brand-assets.mjs "path/to/logo.png"` regenerates everything
+from the master logo: the full lockup, a header wordmark, a recoloured
+dark-mode wordmark, and the app icons. Band boundaries are detected from the
+image rather than hardcoded, so a logo revision needs no code change. Palette
+colours in `globals.css` were sampled from the artwork — `#385020` is the
+wordmark green and the truck tray.
 
 ## Status
 
