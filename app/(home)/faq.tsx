@@ -16,7 +16,7 @@ const FAQ = [
   },
   {
     q: "Why isn't it free? Isn't the arborist getting rid of a waste product?",
-    a: "Because free listings don't get serviced. A driver with a full truck and a tight schedule will always pick the drop that's worth the detour over the one that isn't. The fee covers the driving and tipping, and it's still a fraction of what the same volume costs from a landscape supplier.",
+    a: "The chip is free — the delivery isn't. A crew has to drive a loaded truck to your place and tip it, and the fee covers running the service that gets them there. It's still a fraction of what the same volume costs from a landscape supplier, where you'd pay for the material as well.",
   },
   {
     q: "When am I charged?",

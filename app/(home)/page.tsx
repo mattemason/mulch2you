@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { getSiteStats } from "@/lib/db/queries";
 import { getCurrentUser } from "@/lib/session";
 import { VOLUME_TIERS, VOLUME_TIER_KEYS, formatPrice } from "@/lib/listing-options";
 import { SiteHeader } from "./site-header";
@@ -18,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [user, stats] = await Promise.all([getCurrentUser(), getSiteStats()]);
+  const user = await getCurrentUser();
   const signedIn = Boolean(user);
 
   return (
@@ -119,23 +118,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---------------- stats (real numbers only) ---------------- */}
-      {stats.loadsDelivered + stats.drivewaysWaiting + stats.treeCrews > 0 && (
-        <section className="stats">
-          <div className="wrap">
-            <div className="stats-grid">
-              <Stat
-                value={stats.mulchRehomedM3 > 0 ? Math.round(stats.mulchRehomedM3).toString() : "—"}
-                unit="m³"
-                label="Mulch rehomed instead of tipped"
-              />
-              <Stat value={stats.loadsDelivered.toString()} label="Loads delivered" />
-              <Stat value={stats.drivewaysWaiting.toString()} label="Driveways waiting for a load" />
-              <Stat value={stats.treeCrews.toString()} label="Tree crews on board" />
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Headline numbers live in StatsBand, deliberately not rendered yet —
+          "0 loads delivered" is honest and a terrible advertisement. Switch it
+          back on by uncommenting this line once there's a real story in it. */}
+      {/* <StatsBand /> */}
 
       <HowItWorks />
       <MapPreview />
@@ -229,9 +215,9 @@ export default async function HomePage() {
               <div className="arb-price">$0</div>
               <h3>Tree services don&apos;t pay a cent.</h3>
               <p>
-                No joining fee, no subscription, no per-load charge. The delivery fee comes
-                from the gardener; what a crew gets out of it is a tip run that takes ten
-                minutes instead of an hour, and no gate fee at the end of it.
+                No joining fee, no subscription, no per-load charge. What a crew gets out
+                of it is a tip run that takes ten minutes instead of an hour, and no gate
+                fee at the end of it.
               </p>
             </div>
             <div>
@@ -373,17 +359,6 @@ function Arrow() {
   );
 }
 
-function Stat({ value, unit, label }: { value: string; unit?: string; label: string }) {
-  return (
-    <div className="stat">
-      <div className="stat-num">
-        {value}
-        {unit && <span className="green">{unit}</span>}
-      </div>
-      <div className="stat-label">{label}</div>
-    </div>
-  );
-}
 
 function Benefit({
   title,
