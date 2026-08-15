@@ -1,3 +1,4 @@
+import "server-only";
 import { ServerClient } from "postmark";
 import { env, isProd } from "@/lib/env";
 

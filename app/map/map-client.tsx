@@ -18,8 +18,8 @@ import {
   MATERIALS_WANTED,
   VOLUME_TIERS,
   type DropSpotKey,
+  type Exclusion,
 } from "@/lib/listing-options";
-import type { Exclusion } from "@/lib/db/schema";
 import { claimListing } from "@/app/drops/actions";
 
 /** Sydney GPO — only used if the browser won't or can't give up a location. */

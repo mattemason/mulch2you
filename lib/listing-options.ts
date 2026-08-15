@@ -1,4 +1,3 @@
-import type { Exclusion } from "@/lib/db/schema";
 
 /**
  * The receiver picks a tier, not a number of cubic metres.
@@ -74,6 +73,19 @@ export function tierMaxM3(tier: VolumeTierKey): number | null {
 export function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2).replace(/\.00$/, "")}`;
 }
+
+/** Material a receiver refuses. Stored as text[] so adding kinds needs no migration. */
+export const EXCLUSIONS = [
+  "palm",
+  "pine",
+  "conifer",
+  "thorny",
+  "diseased",
+  "camphor_laurel",
+  "privet",
+  "stump_grindings",
+] as const;
+export type Exclusion = (typeof EXCLUSIONS)[number];
 
 /**
  * What a receiver can refuse. Species matter more than people expect: camphor

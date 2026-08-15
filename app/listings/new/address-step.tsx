@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { lookupAddress, resolvePrediction } from "../actions";
-import { parseStreetNumber, type AddressPrediction, type ResolvedAddress } from "@/lib/geocode";
+import { parseStreetNumber, type AddressPrediction, type ResolvedAddress } from "@/lib/address";
 
 export type ConfirmedAddress = {
   addressLine: string;

@@ -5,9 +5,9 @@ import { useFormStatus } from "react-dom";
 import { createListing, type ListingState } from "../actions";
 import { AddressStep, type ConfirmedAddress } from "./address-step";
 import { PhotoField } from "@/app/photo-field";
-import { EXCLUSIONS } from "@/lib/db/schema";
 import {
   DROP_SPOTS,
+  EXCLUSIONS,
   DROP_SPOT_KEYS,
   EXCLUSION_LABELS,
   MATERIALS_WANTED,

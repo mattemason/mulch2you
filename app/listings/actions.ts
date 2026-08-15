@@ -5,19 +5,16 @@ import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { EXCLUSIONS, listings } from "@/lib/db/schema";
+import { listings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { fuzzCoords } from "@/lib/geo";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { deleteObject, newKey, putObject } from "@/lib/storage";
-import {
-  resolveAddress,
-  suggestAddresses,
-  type AddressPrediction,
-  type ResolvedAddress,
-} from "@/lib/geocode";
+import { resolveAddress, suggestAddresses } from "@/lib/geocode";
+import type { AddressPrediction, ResolvedAddress } from "@/lib/address";
 import {
   DROP_SPOT_KEYS,
+  EXCLUSIONS,
   MATERIAL_WANTED_KEYS,
   VOLUME_TIER_KEYS,
   tierMaxM3,

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { listings, type Exclusion } from "@/lib/db/schema";
+import { listings } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import {
   DROP_SPOTS,
   EXCLUSION_LABELS,
   MATERIALS_WANTED,
   VOLUME_TIERS,
+  type Exclusion,
   daysUntilStale,
   formatPrice,
   type DropSpotKey,

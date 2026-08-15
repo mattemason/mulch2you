@@ -64,18 +64,9 @@ export const dropSpot = pgEnum("drop_spot", [
   "other",
 ]);
 
-/** Material a receiver refuses. Stored as text[] so adding kinds needs no migration. */
-export const EXCLUSIONS = [
-  "palm",
-  "pine",
-  "conifer",
-  "thorny",
-  "diseased",
-  "camphor_laurel",
-  "privet",
-  "stump_grindings",
-] as const;
-export type Exclusion = (typeof EXCLUSIONS)[number];
+// Material a receiver refuses lives in lib/listing-options.ts — it's a plain
+// list with no database dependency, and keeping it out of here keeps drizzle
+// out of the client bundle.
 
 export const ETA_WINDOWS = ["within_2h", "today", "tomorrow", "this_week"] as const;
 export type EtaWindow = (typeof ETA_WINDOWS)[number];
