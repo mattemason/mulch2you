@@ -1,6 +1,6 @@
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { listings } from "./schema";
+import { drops, listings, supplierProfiles } from "./schema";
 import { boundingBox, type Coords } from "@/lib/geo";
 
 export type NearbyListing = {
@@ -97,4 +97,49 @@ export async function findNearbyListings(
 
   // The box is a rectangle; the radius is a circle. Trim the corners.
   return rows.filter((r) => r.distanceKm <= radiusKm) as NearbyListing[];
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type SiteStats = {
+  mulchRehomedM3: number;
+  loadsDelivered: number;
+  drivewaysWaiting: number;
+  treeCrews: number;
+};
+
+/**
+ * Headline numbers for the homepage.
+ *
+ * Deliberately computed rather than written into the markup: a marketing page
+ * quoting invented totals is a fabricated trust signal, and these are cheap
+ * enough to just ask the database for.
+ */
+export async function getSiteStats(database: typeof db = db): Promise<SiteStats> {
+  const [row] = await database
+    .select({
+      // volume_m3 is optional on a drop, so this is a floor, not a guess.
+      mulchRehomedM3: sql<number>`coalesce(sum(case when ${drops.status} = 'completed' then ${drops.volumeM3} end), 0)::float`,
+      loadsDelivered: sql<number>`count(*) filter (where ${drops.status} = 'completed')::int`,
+    })
+    .from(drops);
+
+  const [pins] = await database
+    .select({
+      drivewaysWaiting: sql<number>`count(*) filter (where ${listings.status} = 'active')::int`,
+    })
+    .from(listings);
+
+  const [crews] = await database
+    .select({
+      treeCrews: sql<number>`count(*) filter (where ${supplierProfiles.verifiedAt} is not null)::int`,
+    })
+    .from(supplierProfiles);
+
+  return {
+    mulchRehomedM3: Number(row?.mulchRehomedM3 ?? 0),
+    loadsDelivered: row?.loadsDelivered ?? 0,
+    drivewaysWaiting: pins?.drivewaysWaiting ?? 0,
+    treeCrews: crews?.treeCrews ?? 0,
+  };
 }

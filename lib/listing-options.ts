@@ -11,24 +11,28 @@
  */
 export const VOLUME_TIERS = {
   small: {
+    name: "Small load",
     label: "Up to 3 m³",
     blurb: "A trailer or ute load. Enough for a few garden beds.",
     maxM3: 3,
     priceCents: 2000,
   },
   medium: {
+    name: "Backyard load",
     label: "Up to 6 m³",
     blurb: "A small truck load. Covers a decent suburban backyard.",
     maxM3: 6,
     priceCents: 3500,
   },
   large: {
+    name: "Full truck",
     label: "A full truck",
     blurb: "Up to about 10 m³ tipped in one go. You'll need room for it.",
     maxM3: 10,
     priceCents: 5000,
   },
   unlimited: {
+    name: "Send everything",
     label: "As much as you can send",
     blurb: "Community gardens, schools, Landcare sites, acreage and farms.",
     maxM3: null,
@@ -36,7 +40,7 @@ export const VOLUME_TIERS = {
   },
 } as const satisfies Record<
   string,
-  { label: string; blurb: string; maxM3: number | null; priceCents: number }
+  { name: string; label: string; blurb: string; maxM3: number | null; priceCents: number }
 >;
 
 /**

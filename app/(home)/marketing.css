@@ -1,0 +1,1186 @@
+/**
+ * Marketing homepage styles, from the supplied template.
+ *
+ * Kept as plain CSS rather than translated to Tailwind: the template is a
+ * finished design, and rewriting it class by class would introduce drift for
+ * no benefit. Everything is scoped under .marketing so it can't reach the
+ * app's own pages, which use the token set in globals.css.
+ */
+
+.marketing {
+  --ink: #14170f;
+  --ink-soft: #2c3226;
+  --muted: #6b7363;
+  --line: #e2e0d6;
+
+  --green: #2e7d22;
+  --green-dark: #21601a;
+  --green-lite: #4fa33c;
+  --green-wash: #edf5ea;
+
+  --olive: #4e6b2e;
+  --bark: #8a5a2b;
+  --chip: #c08f4a;
+
+  --sand: #f7f4ec;
+  --cream: #fcfaf6;
+  --white: #ffffff;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-lg: 26px;
+  --shadow: 0 1px 2px rgba(20, 23, 15, 0.06), 0 12px 32px -12px rgba(20, 23, 15, 0.18);
+  --shadow-lg: 0 2px 4px rgba(20, 23, 15, 0.06), 0 32px 64px -24px rgba(20, 23, 15, 0.28);
+
+  --wrap: 1200px;
+
+  /* The page is designed light-only, so it opts out of the app's dark theme
+     rather than half-inverting into something nobody designed. */
+  color-scheme: light;
+  background: var(--white);
+  color: var(--ink-soft);
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.marketing img,
+.marketing svg {
+  max-width: 100%;
+  display: block;
+}
+.marketing a {
+  color: inherit;
+  text-decoration: none;
+}
+.marketing button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+.marketing .wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.marketing h1,
+.marketing h2,
+.marketing h3,
+.marketing h4 {
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.06;
+  letter-spacing: 0.005em;
+}
+.marketing .display {
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+  transform-origin: left bottom;
+  letter-spacing: 0.01em;
+}
+.marketing h1.display {
+  font-size: clamp(2.6rem, 6.2vw, 5rem);
+}
+.marketing h2.display {
+  font-size: clamp(2rem, 4.2vw, 3.25rem);
+}
+.marketing h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.marketing p {
+  margin: 0;
+}
+.marketing .lead {
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  color: var(--muted);
+  line-height: 1.55;
+}
+.marketing .green {
+  color: var(--green);
+}
+
+.marketing .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.775rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 18px;
+}
+.marketing .eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 2px;
+  background: var(--green);
+  border-radius: 2px;
+}
+
+.marketing section {
+  padding: clamp(64px, 8vw, 108px) 0;
+}
+.marketing .section-head {
+  max-width: 660px;
+  margin-bottom: 48px;
+}
+.marketing .section-head.center {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.marketing .section-head p {
+  margin-top: 18px;
+}
+
+/* --- buttons ------------------------------------------------------------ */
+.marketing .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 26px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  white-space: nowrap;
+}
+.marketing .btn:hover {
+  transform: translateY(-2px);
+}
+.marketing .btn:active {
+  transform: translateY(0);
+}
+.marketing .btn-green {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 8px 20px -8px rgba(46, 125, 34, 0.7);
+}
+.marketing .btn-green:hover {
+  background: var(--green-dark);
+  box-shadow: 0 14px 28px -10px rgba(46, 125, 34, 0.75);
+}
+.marketing .btn-ink {
+  background: var(--ink);
+  color: #fff;
+}
+.marketing .btn-ink:hover {
+  background: #000;
+}
+.marketing .btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 2px solid var(--line);
+  padding: 13px 24px;
+}
+.marketing .btn-ghost:hover {
+  border-color: var(--ink);
+  background: var(--sand);
+}
+.marketing .btn-white {
+  background: #fff;
+  color: var(--ink);
+}
+.marketing .btn-outline-white {
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  padding: 13px 24px;
+}
+.marketing .btn-outline-white:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.marketing .btn-lg {
+  padding: 18px 32px;
+  font-size: 1.06rem;
+}
+.marketing .btn-block {
+  width: 100%;
+}
+
+/* --- header ------------------------------------------------------------- */
+.marketing .topbar {
+  background: var(--ink);
+  color: #c9cfc1;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+.marketing .topbar .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  gap: 20px;
+}
+.marketing .topbar strong {
+  color: #fff;
+}
+.marketing .topbar-links {
+  display: flex;
+  gap: 22px;
+}
+.marketing .topbar-links a:hover {
+  color: #fff;
+}
+
+.marketing .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.marketing .site-header .wrap {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 78px;
+}
+.marketing .logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.marketing .logo-img {
+  height: 34px;
+  width: auto;
+}
+
+.marketing .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: 8px;
+}
+.marketing .nav-links a {
+  font-weight: 600;
+  font-size: 0.96rem;
+  color: var(--ink-soft);
+  position: relative;
+  padding: 6px 0;
+}
+.marketing .nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--green);
+  transition: width 0.2s ease;
+}
+.marketing .nav-links a:hover::after {
+  width: 100%;
+}
+.marketing .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+.marketing .nav-actions .btn {
+  padding: 12px 20px;
+  font-size: 0.94rem;
+}
+
+.marketing .burger {
+  display: none;
+  margin-left: auto;
+  padding: 10px;
+  border-radius: 8px;
+}
+.marketing .burger span {
+  display: block;
+  width: 24px;
+  height: 2.5px;
+  background: var(--ink);
+  border-radius: 2px;
+}
+.marketing .burger span + span {
+  margin-top: 5px;
+}
+.marketing .mobile-nav {
+  display: none;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  padding: 16px 24px 26px;
+}
+.marketing .mobile-nav.open {
+  display: block;
+}
+.marketing .mobile-nav a {
+  display: block;
+  padding: 13px 0;
+  font-weight: 600;
+  border-bottom: 1px solid var(--line);
+}
+.marketing .mobile-nav .btn {
+  margin-top: 16px;
+}
+
+/* --- hero --------------------------------------------------------------- */
+.marketing .hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(56px, 7vw, 86px) 0 0;
+  background: radial-gradient(1100px 520px at 78% -10%, rgba(79, 163, 60, 0.16), transparent 60%),
+    linear-gradient(180deg, var(--cream) 0%, var(--sand) 100%);
+  border-bottom: 1px solid var(--line);
+}
+.marketing .hero-top {
+  max-width: 820px;
+  margin-bottom: 52px;
+}
+.marketing .hero-top .lead {
+  margin-top: 24px;
+  max-width: 640px;
+}
+.marketing .hero-truck {
+  position: absolute;
+  right: -70px;
+  top: 40px;
+  width: min(50vw, 660px);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.marketing .doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  position: relative;
+  z-index: 2;
+}
+.marketing .door {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 34px 34px 30px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+.marketing .door:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+.marketing .door::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+}
+.marketing .door--home::before {
+  background: linear-gradient(90deg, var(--green), var(--green-lite));
+}
+.marketing .door--arb::before {
+  background: linear-gradient(90deg, var(--bark), var(--chip));
+}
+.marketing .door-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+}
+.marketing .door--home .door-icon {
+  background: var(--green-wash);
+  color: var(--green);
+}
+.marketing .door--arb .door-icon {
+  background: #f6ede0;
+  color: var(--bark);
+}
+.marketing .door-kicker {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.marketing .door h2 {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.marketing .door p {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+.marketing .door ul {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 11px;
+}
+.marketing .door li {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+.marketing .tick {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+}
+.marketing .door--home .tick {
+  background: var(--green);
+  color: #fff;
+}
+.marketing .door--arb .tick {
+  background: var(--bark);
+  color: #fff;
+}
+.marketing .tick svg {
+  width: 11px;
+  height: 11px;
+}
+.marketing .door .btn {
+  margin-top: 28px;
+}
+.marketing .door-foot {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* --- stats -------------------------------------------------------------- */
+.marketing .stats {
+  background: var(--ink);
+  padding: clamp(44px, 5vw, 64px) 0;
+}
+.marketing .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.marketing .stat {
+  padding: 0 20px;
+  border-left: 1px solid #2a3122;
+}
+.marketing .stat:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.marketing .stat-num {
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
+  color: #fff;
+  line-height: 1;
+  transform: skewX(-6deg);
+  display: inline-block;
+}
+.marketing .stat-num .green {
+  color: var(--green-lite);
+}
+.marketing .stat-label {
+  color: #98a28c;
+  font-size: 0.92rem;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* --- how it works ------------------------------------------------------- */
+.marketing .how {
+  background: var(--white);
+}
+.marketing .tabs {
+  display: inline-flex;
+  padding: 6px;
+  background: var(--sand);
+  border-radius: 14px;
+  gap: 6px;
+  margin-bottom: 52px;
+}
+.marketing .tab {
+  padding: 13px 26px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--muted);
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.marketing .tab[aria-selected="true"] {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.marketing .tab:hover:not([aria-selected="true"]) {
+  color: var(--ink);
+}
+
+.marketing .panel[hidden] {
+  display: none;
+}
+.marketing .steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+}
+.marketing .step {
+  position: relative;
+  padding-top: 8px;
+}
+.marketing .step-num {
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-size: 3.4rem;
+  line-height: 1;
+  color: var(--green);
+  opacity: 0.22;
+  transform: skewX(-6deg);
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.marketing .panel--arb .step-num {
+  color: var(--bark);
+}
+.marketing .step h3 {
+  margin-bottom: 10px;
+}
+.marketing .step p {
+  color: var(--muted);
+  font-size: 0.98rem;
+}
+.marketing .step::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  right: -13px;
+  width: 26px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+.marketing .step:last-child::after {
+  display: none;
+}
+
+/* --- map preview -------------------------------------------------------- */
+.marketing .map-section {
+  background: var(--sand);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.marketing .map-layout {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 26px;
+  align-items: stretch;
+}
+.marketing .map-frame {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  position: relative;
+  min-height: 480px;
+}
+.marketing .map-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0));
+}
+.marketing .map-search {
+  flex: 1;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.93rem;
+  box-shadow: var(--shadow);
+}
+.marketing .chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.marketing .chip.on {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.marketing .map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.marketing .map-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 3;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.82rem;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 8px;
+}
+.marketing .legend-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 600;
+}
+.marketing .legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+
+.marketing .pin {
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+.marketing .pin:hover,
+.marketing .pin.active {
+  transform: translateY(-4px);
+}
+.marketing .pin-body {
+  filter: drop-shadow(0 6px 10px rgba(20, 23, 15, 0.28));
+}
+
+.marketing .listings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.marketing .listings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.marketing .listings-head h3 {
+  font-size: 1.05rem;
+}
+.marketing .listings-head span {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.marketing .listing {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  gap: 15px;
+  transition: all 0.18s ease;
+  text-align: left;
+  width: 100%;
+}
+.marketing .listing:hover,
+.marketing .listing.active {
+  border-color: var(--green);
+  box-shadow: var(--shadow);
+  transform: translateX(3px);
+}
+.marketing .listing-badge {
+  flex: 0 0 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--green-wash);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-size: 1.05rem;
+  transform: skewX(-6deg);
+}
+.marketing .listing--urgent .listing-badge {
+  background: #fdf0e4;
+  color: var(--bark);
+}
+.marketing .listing-main {
+  flex: 1;
+  min-width: 0;
+}
+.marketing .listing-title {
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.marketing .listing-meta {
+  font-size: 0.87rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.marketing .tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: var(--green-wash);
+  color: var(--green-dark);
+}
+.marketing .tag--urgent {
+  background: #fdf0e4;
+  color: #8a5a2b;
+}
+.marketing .tag--big {
+  background: #e9eef6;
+  color: #3b5a82;
+}
+.marketing .listing-attrs {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+.marketing .listing-attrs span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.marketing .demo-note {
+  margin-top: 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* --- benefits ----------------------------------------------------------- */
+.marketing .benefit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.marketing .benefit {
+  padding: 32px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  transition: all 0.2s ease;
+}
+.marketing .benefit:hover {
+  border-color: var(--green);
+  background: var(--green-wash);
+  transform: translateY(-4px);
+}
+.marketing .benefit-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--green-wash);
+  color: var(--green);
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+}
+.marketing .benefit:hover .benefit-icon {
+  background: var(--green);
+  color: #fff;
+}
+.marketing .benefit p {
+  color: var(--muted);
+  margin-top: 11px;
+  font-size: 0.98rem;
+}
+
+/* --- pricing ------------------------------------------------------------ */
+.marketing .pricing {
+  background: var(--cream);
+  border-top: 1px solid var(--line);
+}
+.marketing .price-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+.marketing .price {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.marketing .price > p {
+  color: var(--muted);
+  font-size: 0.96rem;
+  flex: 1;
+}
+.marketing .price--feature {
+  border: 2px solid var(--green);
+  box-shadow: var(--shadow-lg);
+}
+.marketing .price-vol {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  margin-bottom: 12px;
+}
+.marketing .price-flag {
+  position: absolute;
+  top: -13px;
+  left: 30px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 6px 13px;
+  border-radius: 6px;
+}
+.marketing .price-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.marketing .price-amt {
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-size: 3.2rem;
+  color: var(--ink);
+  transform: skewX(-6deg);
+  display: inline-block;
+  margin: 16px 0 4px;
+  line-height: 1;
+}
+.marketing .price .btn {
+  margin-top: 28px;
+}
+
+.marketing .arb-band {
+  margin-top: 26px;
+  background: var(--ink);
+  color: #b9c2ae;
+  border-radius: var(--radius-lg);
+  padding: 38px 40px;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 36px;
+  align-items: center;
+}
+.marketing .arb-band h3 {
+  color: #fff;
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+.marketing .arb-band p {
+  margin-top: 14px;
+  line-height: 1.6;
+}
+.marketing .arb-price {
+  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
+  font-size: 3.4rem;
+  color: var(--green-lite);
+  transform: skewX(-6deg);
+  display: inline-block;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.marketing .arb-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: grid;
+  gap: 11px;
+  font-size: 0.96rem;
+}
+.marketing .arb-points li {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  color: #d6dccd;
+}
+.marketing .arb-points .tick {
+  background: var(--green-lite);
+  color: #0e110a;
+}
+
+/* --- faq ---------------------------------------------------------------- */
+.marketing .faq {
+  background: var(--sand);
+  border-top: 1px solid var(--line);
+}
+.marketing .faq-list {
+  max-width: 840px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+.marketing .qa {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.marketing .qa summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 22px 26px;
+  font-weight: 700;
+  color: var(--ink);
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.marketing .qa summary::-webkit-details-marker {
+  display: none;
+}
+.marketing .qa summary:hover {
+  background: var(--cream);
+}
+.marketing .qa .plus {
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+  color: var(--green);
+}
+.marketing .qa[open] .plus {
+  transform: rotate(45deg);
+}
+.marketing .qa .answer {
+  padding: 0 26px 24px;
+  color: var(--muted);
+}
+
+/* --- closing + footer --------------------------------------------------- */
+.marketing .closing {
+  background: radial-gradient(700px 400px at 15% 0%, rgba(79, 163, 60, 0.28), transparent 65%),
+    var(--ink);
+  color: #fff;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.marketing .closing h2 {
+  color: #fff;
+}
+.marketing .closing .lead {
+  color: #b9c2ae;
+  margin: 22px auto 0;
+  max-width: 560px;
+}
+.marketing .closing-btns {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 36px;
+  flex-wrap: wrap;
+}
+.marketing .closing-note {
+  margin-top: 24px;
+  font-size: 0.88rem;
+  color: #8b9480;
+}
+
+.marketing .site-footer {
+  background: #0e110a;
+  color: #8b9480;
+  padding: 70px 0 0;
+  font-size: 0.94rem;
+}
+.marketing .footer-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  gap: 44px;
+  padding-bottom: 52px;
+}
+.marketing .footer-brand p {
+  margin-top: 20px;
+  max-width: 300px;
+  line-height: 1.6;
+}
+.marketing .footer-brand .logo-img {
+  height: 30px;
+}
+.marketing .site-footer h4 {
+  color: #fff;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.marketing .site-footer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 11px;
+}
+.marketing .site-footer a:hover {
+  color: #fff;
+}
+.marketing .footer-bar {
+  border-top: 1px solid #1a1f14;
+  padding: 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 0.87rem;
+}
+.marketing .footer-bar-links {
+  display: flex;
+  gap: 22px;
+}
+
+/* --- responsive --------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .marketing .nav-links,
+  .marketing .nav-actions {
+    display: none;
+  }
+  .marketing .burger {
+    display: block;
+  }
+  .marketing .hero-truck {
+    opacity: 0.16;
+    right: -120px;
+    top: auto;
+    bottom: 200px;
+    width: 560px;
+  }
+  .marketing .steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 34px;
+  }
+  .marketing .step::after {
+    display: none;
+  }
+  .marketing .map-layout {
+    grid-template-columns: 1fr;
+  }
+  .marketing .map-frame {
+    min-height: 400px;
+  }
+  .marketing .benefit-grid,
+  .marketing .price-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .marketing .arb-band {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 32px;
+  }
+  .marketing .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+}
+@media (max-width: 760px) {
+  .marketing {
+    font-size: 16px;
+  }
+  .marketing .topbar-links {
+    display: none;
+  }
+  .marketing .topbar .wrap {
+    justify-content: center;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .marketing .doors {
+    grid-template-columns: 1fr;
+  }
+  .marketing .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 8px;
+  }
+  .marketing .stat {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .marketing .stat:nth-child(2),
+  .marketing .stat:nth-child(4) {
+    border-left: 1px solid #2a3122;
+    padding-left: 20px;
+  }
+  .marketing .steps,
+  .marketing .benefit-grid,
+  .marketing .price-grid,
+  .marketing .footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .marketing .tabs {
+    display: flex;
+    width: 100%;
+  }
+  .marketing .tab {
+    flex: 1;
+    justify-content: center;
+    padding: 13px 10px;
+    font-size: 0.9rem;
+  }
+  .marketing .map-toolbar {
+    flex-wrap: wrap;
+  }
+  .marketing .closing-btns .btn {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marketing * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
