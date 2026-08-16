@@ -2,12 +2,16 @@
 /**
  * The receiver picks a tier, not a number of cubic metres.
  *
- * Two reasons. Suppliers need a filter they can trust before driving 25
- * minutes ("will this pin take my whole truck?"), and pricing has to bill
- * against something verifiable — nobody can prove how much chip actually hit
- * the driveway, so we charge for the band that was requested.
+ * Suppliers need a filter they can trust before driving 25 minutes ("will this
+ * pin take my whole truck?"), and a band is something both sides can agree on
+ * — nobody can prove how much chip actually hit the driveway.
  *
  * maxM3 is what the map filters on. Null means unlimited.
+ *
+ * priceCents is kept but not charged or displayed: the service launched free
+ * on both sides, and these are the figures decided for whenever that changes.
+ * Nothing reads them today, so removing the free launch means putting the
+ * display back rather than re-deciding the numbers.
  */
 export const VOLUME_TIERS = {
   small: {

@@ -266,25 +266,32 @@ given metro area. Ring them. The pitch is money, not sustainability: *"how much 
 a week tipping green waste, and how long does the round trip take?"* Green-waste tipping plus
 driver time is real cost — quantify it in their terms and the app sells itself.
 
-**Monetisation — the receiver pays.** Decided: gardeners pay a nominal fee scaled to how
-much mulch they want; arborists tip for free. Three constraints follow from that choice:
+**Monetisation — deferred. Launching free on both sides.**
 
-- **Charge on delivery, not on listing.** Listing must stay free, or the map goes thin and
-  suppliers stop opening the app — and pin density is the entire product. Take payment
-  details up front if you like, but only capture once the receiver confirms the load
-  arrived. A free marketplace can shrug off "no crew came this week". A prepaid one owes
-  refunds and support, on the one thing you can't control: whether a truck shows up.
-- **Price the tier requested, never the volume delivered.** Nobody can verify how many
-  cubic metres actually hit the driveway, and you do not want to arbitrate that argument.
-  Charge against the band the receiver chose (up to 3 m³ / up to 6 m³ / full truck).
-- **Sell the introduction, not the mulch.** Invoice it as a matching or delivery fee. If
-  the fee reads as the price of goods, Australian Consumer Law guarantees attach to the
-  material itself, and every load of weed-seeded or diseased chip becomes your liability.
-  This is a wording decision in the checkout and the terms, and it is worth getting right
-  before the first dollar is taken.
+Nobody pays: no fee for gardeners, nothing for crews, no card on file. The
+economics still work without us in the middle, which is the point — a crew
+tipping two streets from the job avoids a gate fee and a round trip, and that
+saving is real money whether or not anyone invoices for it.
 
-Charging receivers also has a quiet upside: a paid listing is a serious listing, which is
-the cheapest defence there is against the stale-pin problem.
+The reason to start here is liquidity. A marketplace with four pins and one
+crew has nothing to sell; charging before there's density taxes the very
+behaviour you're trying to create. Free removes every reason not to try it.
+
+The figures already decided, for when that changes: $20 up to 3 m³, $35 up to
+6 m³, $50 for a full truck or an open listing. They live in
+`VOLUME_TIERS.priceCents` and nothing displays them. Three constraints from
+when this was designed still hold and are worth not relearning:
+
+- **Charge on delivery, not on listing.** Listing must stay free or the map
+  goes thin, and pin density is the entire product. A free marketplace can
+  shrug off "no crew came this week"; a prepaid one owes refunds on the one
+  thing you can't control.
+- **Price the tier requested, never the volume delivered.** Nobody can verify
+  what actually hit the driveway, and you do not want to arbitrate it.
+- **Sell the introduction, not the mulch.** If a fee reads as the price of
+  goods, Australian Consumer Law guarantees attach to the material itself, and
+  every weed-seeded load becomes your liability.
+
 
 ---
 

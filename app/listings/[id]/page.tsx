@@ -12,7 +12,6 @@ import {
   VOLUME_TIERS,
   type Exclusion,
   daysUntilStale,
-  formatPrice,
   type DropSpotKey,
 } from "@/lib/listing-options";
 import { deleteListing, setListingStatus } from "../actions";
@@ -124,9 +123,7 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
 
         <dl className="mt-8 space-y-4">
           <Row label="Wants">{MATERIALS_WANTED[listing.wanted].label}</Row>
-          <Row label="Taking">
-            {tier.label} · {formatPrice(tier.priceCents)} on delivery
-          </Row>
+          <Row label="Taking">{tier.label}</Row>
           <Row label="Tip it">{spot?.label ?? listing.dropSpot}</Row>
           {listing.accessNotes && <Row label="Access notes">{listing.accessNotes}</Row>}
           <Row label="Won't accept">

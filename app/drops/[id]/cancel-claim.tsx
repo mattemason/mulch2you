@@ -48,7 +48,7 @@ export function CancelClaim({ dropId }: { dropId: string }) {
       <h2 className="font-semibold">Release this claim?</h2>
       <p className="mt-1 text-sm text-muted">
         The pin goes back on the map and the gardener is told no truck is
-        coming. Nothing is charged.
+        coming.
       </p>
 
       <label className="label mt-4" htmlFor="reason">

@@ -1,26 +1,19 @@
 "use client";
 
 import { useRef } from "react";
-import { VOLUME_TIERS, formatPrice } from "@/lib/listing-options";
 
 const FAQ = [
   {
     q: "What does it cost?",
-    a: `A flat delivery fee based on the load size you choose: ${formatPrice(
-      VOLUME_TIERS.small.priceCents,
-    )} for up to 3 m³, ${formatPrice(
-      VOLUME_TIERS.medium.priceCents,
-    )} for up to 6 m³, and ${formatPrice(
-      VOLUME_TIERS.large.priceCents,
-    )} for a full truck or an open "send me everything" listing. Creating the listing is free, and you're not charged until the mulch is on the ground.`,
+    a: "Nothing. Listing is free, delivery is free, and there's no card on file. We're not charging anyone while we get crews and gardeners onto the map.",
   },
   {
-    q: "Why isn't it free? Isn't the arborist getting rid of a waste product?",
-    a: "The chip is free — the delivery isn't. A crew has to drive a loaded truck to your place and tip it, and the fee covers running the service that gets them there. It's still a fraction of what the same volume costs from a landscape supplier, where you'd pay for the material as well.",
+    q: "Why would a crew drive to me for free?",
+    a: "Because the alternative costs them money. Tipping green waste at a transfer station means gate fees plus a round trip that eats billable time. A driveway two streets from the job is cheaper and faster than the depot, which is the whole reason this works without anyone paying us.",
   },
   {
-    q: "When am I charged?",
-    a: "After the load is delivered and you've confirmed it arrived. The driver photographs the drop to close the job. If nobody comes, or the load never lands, you're never charged a cent.",
+    q: "What's the catch?",
+    a: "You're taking fresh arborist woodchip as-is, sight unseen, in whatever quantity the crew has that day. It's not screened, dyed or composted. That's a great deal for a garden bed and a poor one if you wanted something specific.",
   },
   {
     q: "How much mulch actually turns up?",
@@ -31,8 +24,8 @@ const FAQ = [
     a: "Fresh arborist woodchip — a mix of chipped branches, leaf and bark from whatever the crew pruned or removed that day. It's not screened, dyed or composted. Brilliant on garden beds and paths, and it breaks down into good soil. You can rule out species you don't want when you list: palm, pine, conifer, camphor laurel, privet, thorny species, diseased wood or stump grindings.",
   },
   {
-    q: "Can I refuse a load after I've listed?",
-    a: 'Yes. By default every request needs your approval before your address is released, and you can pause or delete a listing at any time. If you\'d rather get mulch faster, tick "drop anytime" — drivers can then claim your pin on the spot, which makes it far more likely a truck picks you.',
+    q: "Can I change my mind after I've listed?",
+    a: "Yes — pause or delete the listing any time and it disappears from the map. Approved crews can claim a live pin without asking, because waiting on a reply is what stops a driver with a full truck. If you'd rather have a heads-up, tick “ring me before you come” and they'll phone ahead.",
   },
   {
     q: "Who can see my address?",

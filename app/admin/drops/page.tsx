@@ -34,9 +34,8 @@ export default async function AdminDropsPage() {
     <>
       <h1 className="text-2xl font-semibold">Drops</h1>
       <p className="mt-2 text-sm text-muted">
-        Every claim and delivery. A completed drop with a proof photo is what a
-        gardener gets billed against, so this is the record to check when
-        someone disputes a load.
+        Every claim and delivery. A completed drop carries a proof photo, so
+        this is the record to check when someone disputes what turned up.
       </p>
 
       {rows.length === 0 ? (

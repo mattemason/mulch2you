@@ -36,20 +36,21 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          <Section title="What you're paying for">
+          <Section title="What it costs">
             <p>
-              The fee is for arranging and delivering a load — the introduction
-              and the drive, not the material. Fresh arborist woodchip is a
-              by-product of the day&apos;s work: unscreened, uncomposted, and
-              whatever species the crew cut. You choose what to exclude when you
-              list, but nobody is grading it.
+              Nothing, on either side. There&apos;s no fee, no subscription and
+              no card on file. If that changes we&apos;ll say so plainly before
+              it does, and nobody will be charged for anything they arranged
+              under these terms.
             </p>
           </Section>
 
-          <Section title="When you're charged">
+          <Section title="What you're getting">
             <p>
-              After the load is delivered and you&apos;ve confirmed it arrived.
-              If no crew comes, or a load never lands, you&apos;re not charged.
+              Fresh arborist woodchip: a by-product of the day&apos;s work,
+              unscreened, uncomposted, and whatever species the crew cut. You
+              choose what to exclude when you list, but nobody is grading it,
+              and it arrives as-is.
             </p>
           </Section>
 

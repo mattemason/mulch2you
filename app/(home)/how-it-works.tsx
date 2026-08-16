@@ -9,15 +9,15 @@ const HOME_STEPS = [
   },
   {
     title: "Pick a load size",
-    body: "From a ute load at $20 to a full truck at $50. The price is flat and shown before you commit.",
+    body: "A ute load through to a full truck. Be honest about your ceiling — a driver who can only tip half a load won't come back.",
   },
   {
     title: "Get matched",
     body: 'A crew working nearby claims your pin. Approve each request, or tick "drop anytime" and let them come.',
   },
   {
-    title: "Pay once it lands",
-    body: "They tip, they photograph it, you confirm. Only then are you charged.",
+    title: "It turns up",
+    body: "They tip it and photograph the load, so you've got a record of what arrived.",
   },
 ];
 
@@ -52,7 +52,7 @@ export function HowItWorks() {
           <h2 className="display">
             Two sides. Four steps.
             <br />
-            One <span className="green">flat fee.</span>
+            Nothing <span className="green">to pay.</span>
           </h2>
           <p className="lead">Pick your side of the fence.</p>
         </div>

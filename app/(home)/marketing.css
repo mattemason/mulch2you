@@ -349,14 +349,6 @@
   margin-top: 24px;
   max-width: 640px;
 }
-.marketing .hero-truck {
-  position: absolute;
-  right: -70px;
-  top: 40px;
-  width: min(50vw, 660px);
-  opacity: 0.95;
-  pointer-events: none;
-}
 
 .marketing .doors {
   display: grid;
@@ -838,121 +830,7 @@
 }
 
 /* --- pricing ------------------------------------------------------------ */
-.marketing .pricing {
-  background: var(--cream);
-  border-top: 1px solid var(--line);
-}
-.marketing .price-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  align-items: stretch;
-}
-.marketing .price {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 28px 24px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-.marketing .price > p {
-  color: var(--muted);
-  font-size: 0.96rem;
-  flex: 1;
-}
-.marketing .price--feature {
-  border: 2px solid var(--green);
-  box-shadow: var(--shadow-lg);
-}
-.marketing .price-vol {
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: var(--green-dark);
-  margin-bottom: 12px;
-}
-.marketing .price-flag {
-  position: absolute;
-  top: -13px;
-  left: 30px;
-  background: var(--green);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 6px 13px;
-  border-radius: 6px;
-}
-.marketing .price-name {
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.marketing .price-amt {
-  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
-  font-size: 3.2rem;
-  color: var(--ink);
-  transform: skewX(-6deg);
-  display: inline-block;
-  margin: 16px 0 4px;
-  line-height: 1;
-}
-.marketing .price .btn {
-  margin-top: 28px;
-}
 
-.marketing .arb-band {
-  margin-top: 26px;
-  background: var(--ink);
-  color: #b9c2ae;
-  border-radius: var(--radius-lg);
-  padding: 38px 40px;
-  display: grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap: 36px;
-  align-items: center;
-}
-.marketing .arb-band h3 {
-  color: #fff;
-  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
-  letter-spacing: -0.02em;
-  line-height: 1.12;
-}
-.marketing .arb-band p {
-  margin-top: 14px;
-  line-height: 1.6;
-}
-.marketing .arb-price {
-  font-family: var(--font-display), "Arial Narrow", Impact, sans-serif;
-  font-size: 3.4rem;
-  color: var(--green-lite);
-  transform: skewX(-6deg);
-  display: inline-block;
-  line-height: 1;
-  margin-bottom: 6px;
-}
-.marketing .arb-points {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 22px;
-  display: grid;
-  gap: 11px;
-  font-size: 0.96rem;
-}
-.marketing .arb-points li {
-  display: flex;
-  gap: 11px;
-  align-items: flex-start;
-  color: #d6dccd;
-}
-.marketing .arb-points .tick {
-  background: var(--green-lite);
-  color: #0e110a;
-}
 
 /* --- faq ---------------------------------------------------------------- */
 .marketing .faq {
@@ -1093,14 +971,7 @@
   .marketing .burger {
     display: block;
   }
-  .marketing .hero-truck {
-    opacity: 0.16;
-    right: -120px;
-    top: auto;
-    bottom: 200px;
-    width: 560px;
-  }
-  .marketing .steps {
+    .marketing .steps {
     grid-template-columns: repeat(2, 1fr);
     gap: 34px;
   }
@@ -1114,15 +985,7 @@
     min-height: 400px;
   }
   .marketing .benefit-grid,
-  .marketing .price-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .marketing .arb-band {
-    grid-template-columns: 1fr;
-    gap: 28px;
-    padding: 32px;
-  }
-  .marketing .footer-grid {
+      .marketing .footer-grid {
     grid-template-columns: 1fr 1fr;
     gap: 36px;
   }
@@ -1157,7 +1020,6 @@
   }
   .marketing .steps,
   .marketing .benefit-grid,
-  .marketing .price-grid,
   .marketing .footer-grid {
     grid-template-columns: 1fr;
   }

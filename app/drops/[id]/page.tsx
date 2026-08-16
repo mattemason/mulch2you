@@ -181,8 +181,8 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
           <div className="mt-8 border-t border-border pt-8">
             <h2 className="font-semibold">Once you&apos;ve tipped it</h2>
             <p className="mt-1 text-sm text-muted">
-              A photo of the load on the ground closes the job off and is what
-              the gardener is billed against.
+              A photo of the load on the ground closes the job off, and gives
+              both of you a record of what actually arrived.
             </p>
             <CompleteDropForm dropId={drop.id} />
             <CancelClaim dropId={drop.id} />

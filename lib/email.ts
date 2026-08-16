@@ -163,7 +163,7 @@ export async function sendDropCancelledEmail({
     text:
       `${greeting}\n\n${businessName} has released the claim on your ${suburb} listing, so no truck is coming.` +
       `${reason ? `\n\nThey said: ${reason}` : ""}\n\n` +
-      `Your pin is back on the map and other crews can see it. Nothing has been charged.`,
+      `Your pin is back on the map and other crews can see it.`,
     html: layout(`
       <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">That drop isn't happening</h1>
       <p style="margin:0 0 8px;color:#44544a;">${greeting}</p>
@@ -173,7 +173,7 @@ export async function sendDropCancelledEmail({
       </p>
       ${reason ? `<p style="margin:0 0 16px;padding:12px 14px;background:#f6f7f4;border-radius:8px;color:#44544a;">"${reason}"</p>` : ""}
       <p style="margin:0;color:#44544a;">
-        Your pin is back on the map for other crews, and nothing has been charged.
+        Your pin is back on the map for other crews.
       </p>
     `),
   });

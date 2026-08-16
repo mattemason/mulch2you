@@ -12,7 +12,6 @@ import {
   MATERIAL_WANTED_KEYS,
   VOLUME_TIERS,
   VOLUME_TIER_KEYS,
-  formatPrice,
   type DropSpotKey,
   type MaterialWantedKey,
   type VolumeTierKey,
@@ -107,12 +106,7 @@ function DetailsStep({ address, onBack }: { address: ConfirmedAddress; onBack: (
                   className="mt-1 size-4 accent-[var(--brand)]"
                 />
                 <span className="flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium">{t.label}</span>
-                    <span className="text-sm font-semibold text-brand">
-                      {formatPrice(t.priceCents)}
-                    </span>
-                  </span>
+                  <span className="font-medium">{t.label}</span>
                   <span className="mt-0.5 block text-sm text-muted">{t.blurb}</span>
                 </span>
               </label>
@@ -120,8 +114,7 @@ function DetailsStep({ address, onBack }: { address: ConfirmedAddress; onBack: (
           })}
         </div>
         <p className="mt-3 text-xs text-muted">
-          You&apos;re only charged once a load has actually been delivered and
-          you&apos;ve confirmed it arrived. Listing is free.
+          Free, whichever you pick — this only tells drivers what will fit.
         </p>
       </fieldset>
 
