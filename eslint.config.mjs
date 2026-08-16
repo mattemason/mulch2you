@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Minified library copied in by scripts/copy-maplibre-worker.mjs — it's a
+    // build artefact, not source, and linting it buries real findings.
+    "public/maplibre/**",
   ]),
 ]);
 

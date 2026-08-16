@@ -43,3 +43,6 @@ next-env.d.ts
 
 # uploaded photos (local dev)
 /.uploads/
+
+# copied from node_modules by scripts/copy-maplibre-worker.mjs
+/public/maplibre/

@@ -17,7 +17,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "verify:images": "tsx scripts/verify-images.ts",
-    "verify": "npm run verify:geo && npm run verify:images"
+    "verify": "npm run verify:geo && npm run verify:images",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
+    "predev": "node scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
