@@ -1,17 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import {
-  GeolocateControl,
-  LngLatBounds,
-  Map as MapLibreMap,
-  Marker,
-  NavigationControl,
-} from "maplibre-gl";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LngLatBounds, Map as MapLibreMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { NearbyListing } from "@/lib/db/queries";
 import { formatDistance, type Coords } from "@/lib/geo";
+import { listingRef } from "@/lib/refs";
 import {
   DROP_SPOTS,
   EXCLUSION_LABELS,
@@ -20,90 +15,78 @@ import {
   type DropSpotKey,
   type Exclusion,
 } from "@/lib/listing-options";
-import { claimListing } from "@/app/drops/actions";
+import { Icon } from "./icons";
 
-/** Sydney GPO — only used if the browser won't or can't give up a location. */
+/** Sydney GPO — only if the browser won't or can't give up a location. */
 const FALLBACK_CENTRE: Coords = { lat: -33.8688, lng: 151.2093 };
 const LOCATE_TIMEOUT_MS = 9000;
 
-/** Matches the palette in globals.css; inline so markers never depend on the CSS build. */
-const BRAND_GREEN = "#385020";
-const BRAND_AMBER = "#8a5a2a";
+/** Inline so markers never depend on the CSS build having emitted a utility. */
+const PIN_NOW = "#E8631A";
+const PIN_OPEN = "#2E7D22";
 
-type Filters = { radiusKm: number; fullTruckOnly: boolean; instantOnly: boolean };
-
-const DEFAULT_FILTERS: Filters = { radiusKm: 25, fullTruckOnly: false, instantOnly: false };
+type Filters = { radiusKm: number; now: boolean; full: boolean; unlimited: boolean };
+const DEFAULT_FILTERS: Filters = { radiusKm: 25, now: false, full: false, unlimited: false };
 
 export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
-  const markersRef = useRef<Marker[]>([]);
-  /** Guards against a slow earlier request landing after a faster later one. */
   const requestSeq = useRef(0);
+  const selectedRef = useRef<string | null>(null);
 
-  // Null centre means "still working out where the truck is".
   const [centre, setCentre] = useState<Coords | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [listings, setListings] = useState<NearbyListing[]>([]);
-  const [selected, setSelected] = useState<NearbyListing | null>(null);
-  const selectedRef = useRef<NearbyListing | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [mapError, setMapError] = useState<string | null>(null);
-  /**
-   * The map is the nicer view but the more fragile one — it needs WebGL, a
-   * reachable tile CDN, and a container that has settled. A driver standing in
-   * a yard needs the addresses either way, so the list is a peer rather than a
-   * consolation prize, and a broken map falls back to it automatically.
-   */
+  const [mapBroken, setMapBroken] = useState(false);
   const [view, setView] = useState<"map" | "list">("map");
-  const showList = view === "list" || mapError !== null;
-
-  // Mirrored into a ref so the marker effect can check it without listing
-  // `selected` as a dependency, which would rebuild every marker on each tap.
-  useEffect(() => {
-    selectedRef.current = selected;
-  }, [selected]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [canResearch, setCanResearch] = useState(false);
 
   const locating = centre === null;
   const effectiveCentre = centre ?? FALLBACK_CENTRE;
+  const selected = listings.find((l) => l.id === selectedId) ?? null;
+  const listMode = view === "list" || mapBroken;
+
+  useEffect(() => {
+    selectedRef.current = selectedId;
+  }, [selectedId]);
 
   /* --- data ---------------------------------------------------------------- */
-  // Called from events rather than an effect: the two things that should
-  // trigger a search are "we found the truck" and "the driver changed a
-  // filter", and both are already explicit moments.
   const search = useCallback(async (at: Coords, f: Filters) => {
     const seq = ++requestSeq.current;
-
     const params = new URLSearchParams({
       lat: String(at.lat),
       lng: String(at.lng),
       radiusKm: String(f.radiusKm),
     });
-    if (f.fullTruckOnly) params.set("minCapacityM3", "10");
-    if (f.instantOnly) params.set("preAuthorisedOnly", "true");
+    if (f.now) params.set("preAuthorisedOnly", "true");
+    if (f.full) params.set("minCapacityM3", "10");
 
     try {
       const res = await fetch(`/api/listings/nearby?${params}`);
       if (seq !== requestSeq.current) return;
-
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't load pins");
+        setError(body.error ?? "Couldn't load sites");
         return;
       }
       const data = (await res.json()) as { listings: NearbyListing[] };
       if (seq !== requestSeq.current) return;
-      setListings(data.listings);
+      // "Send everything" is one tier value, so it narrows here rather than
+      // earning its own query parameter for a single equality check.
+      setListings(f.unlimited ? data.listings.filter((l) => l.tier === "unlimited") : data.listings);
       setError(null);
     } catch {
-      if (seq === requestSeq.current) setError("Couldn't load pins — check your signal");
+      if (seq === requestSeq.current) setError("Couldn't load sites — check your signal");
     }
   }, []);
 
   const applyCentre = useCallback(
-    (next: Coords) => {
+    (next: Coords, fly = true) => {
       setCentre(next);
-      mapRef.current?.easeTo({ center: [next.lng, next.lat], zoom: 11 });
+      if (fly) mapRef.current?.easeTo({ center: [next.lng, next.lat], zoom: 11 });
       void search(next, filters);
     },
     [filters, search],
@@ -112,6 +95,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const applyFilters = useCallback(
     (next: Filters) => {
       setFilters(next);
+      setSelectedId(null);
       void search(effectiveCentre, next);
     },
     [effectiveCentre, search],
@@ -119,23 +103,16 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
 
   /* --- locate the truck ---------------------------------------------------- */
   useEffect(() => {
-    // Belt and braces: covers a browser with no geolocation API at all, where
-    // neither callback below would ever fire.
     const timer = setTimeout(() => {
       if (requestSeq.current === 0) applyCentre(FALLBACK_CENTRE);
     }, LOCATE_TIMEOUT_MS);
 
     navigator.geolocation?.getCurrentPosition(
       (pos) => applyCentre({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      // Denied or unavailable — the map still works, the driver just pans to
-      // the job themselves.
       () => applyCentre(FALLBACK_CENTRE),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
     );
-
     return () => clearTimeout(timer);
-    // Runs once on mount; applyCentre's identity changes with filters, which
-    // must not re-trigger a location request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -154,37 +131,26 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
         attributionControl: { compact: true },
       });
     } catch (err) {
-      // WebGL unavailable, or a style that won't parse. Without this the page
-      // renders the controls over a blank white box and says nothing.
-      // Deferred so the state change lands after this effect rather than
-      // cascading a render from inside it.
       console.error("map failed to initialise", err);
-      queueMicrotask(() => setMapError("The map couldn't start on this device."));
+      queueMicrotask(() => setMapBroken(true));
       return;
     }
 
-    map.addControl(new NavigationControl({ showCompass: false }), "top-right");
-    map.addControl(
-      new GeolocateControl({ trackUserLocation: true, showAccuracyCircle: true }),
-      "top-right",
-    );
-
-    // Tile or style failures arrive here rather than as thrown errors, so a
-    // blocked CDN would otherwise be silent.
+    // Tile and style failures arrive as events, not exceptions — without this
+    // a blocked CDN is silent and the driver just sees a blank rectangle.
     map.on("error", (e) => {
       console.error("map error", e.error ?? e);
-      setMapError("Map tiles didn't load. Pins still work — try reloading.");
+      setMapBroken(true);
     });
-    map.on("load", () => {
-      setMapError(null);
-      map.resize();
-    });
+    map.on("load", () => map.resize());
+    // Only offer "search this area" once they've actually moved it.
+    map.on("dragend", () => setCanResearch(true));
+    map.on("zoomend", () => setCanResearch(true));
 
-    // The container is sized by flexbox, which can settle after the map reads
-    // its dimensions — a map built at zero height stays at zero height.
+    // Flexbox can settle after the map reads its container size, and a map
+    // built at zero height stays at zero height.
     const observer = new ResizeObserver(() => map.resize());
     observer.observe(container);
-
     mapRef.current = map;
 
     return () => {
@@ -193,6 +159,11 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       mapRef.current = null;
     };
   }, [maptilerKey]);
+
+  // Coming back from the list leaves the canvas stale until it re-measures.
+  useEffect(() => {
+    if (!listMode) mapRef.current?.resize();
+  }, [listMode]);
 
   /* --- markers ------------------------------------------------------------- */
   useEffect(() => {
@@ -203,40 +174,30 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       const el = document.createElement("button");
       el.type = "button";
       el.setAttribute("aria-label", `${VOLUME_TIERS[l.tier].label} in ${l.suburb}`);
-
-      // Inline styles, not Tailwind classes. This element is built imperatively
-      // outside React's render, so utility classes would only work if the CSS
-      // build happened to emit them — and an unemitted background leaves white
-      // text on a pale map, which is a pin you cannot see.
-      Object.assign(el.style, {
-        display: "grid",
-        placeItems: "center",
-        width: "34px",
-        height: "34px",
-        borderRadius: "999px",
-        border: "2px solid #fff",
-        background: l.preAuthorised ? BRAND_GREEN : BRAND_AMBER,
-        color: "#fff",
-        font: "700 15px/1 system-ui, sans-serif",
-        boxShadow: "0 2px 8px rgba(0,0,0,.35)",
-        cursor: "pointer",
-        padding: "0",
-      } satisfies Partial<CSSStyleDeclaration>);
-      el.textContent = l.preAuthorised ? "⚡" : "?";
+      const colour = l.preAuthorised ? PIN_NOW : PIN_OPEN;
+      const cap = l.maxVolumeM3 ? Math.round(Number(l.maxVolumeM3)) : "∞";
+      el.innerHTML =
+        `<span style="position:relative;display:block;width:44px;height:52px;` +
+        `filter:drop-shadow(0 5px 8px rgba(20,23,15,.3))">` +
+        `<svg width="44" height="52" viewBox="0 0 44 52"><path ` +
+        `d="M22 1c9.4 0 17 7.6 17 17 0 12.3-17 33-17 33S5 30.3 5 18C5 8.6 12.6 1 22 1z" ` +
+        `fill="${colour}" stroke="#fff" stroke-width="2.5"/></svg>` +
+        `<span style="position:absolute;top:8px;left:0;right:0;text-align:center;color:#fff;` +
+        `font:800 12px/1 system-ui,sans-serif">${cap}</span></span>`;
+      Object.assign(el.style, { background: "none", border: "0", padding: "0", cursor: "pointer" });
 
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        setSelected(l);
-        map.easeTo({ center: [l.approxLng, l.approxLat], zoom: 13 });
+        setSelectedId(l.id);
+        map.easeTo({ center: [l.approxLng, l.approxLat], zoom: Math.max(map.getZoom(), 13) });
       });
 
-      return new Marker({ element: el }).setLngLat([l.approxLng, l.approxLat]).addTo(map);
+      return new Marker({ element: el, anchor: "bottom" })
+        .setLngLat([l.approxLng, l.approxLat])
+        .addTo(map);
     });
 
-    markersRef.current = markers;
-
-    // Frame everything found, so pins are never just off-screen. Skipped once
-    // the driver has picked one, or panning would fight them.
+    // Frame everything found, so pins are never just off-screen.
     if (listings.length > 0 && !selectedRef.current) {
       const bounds = new LngLatBounds();
       listings.forEach((l) => bounds.extend([l.approxLng, l.approxLat]));
@@ -247,266 +208,315 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   }, [listings]);
 
   /* --- render -------------------------------------------------------------- */
+  const count = listings.length;
+  const countLabel = `${count} ${count === 1 ? "site" : "sites"}`;
+
   return (
-    <div className="relative flex-1 min-h-[60vh]">
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className={`m2y m2y-app${listMode ? " list-mode" : ""}`}>
+      <div className="panel">
+        <header className="appbar">
+          <Link href="/dashboard" className="icon-btn" aria-label="Back to dashboard">
+            <Icon.back />
+          </Link>
+          <div className="appbar-loc">
+            <div className="lbl">Searching around</div>
+            <div className="val">
+              <Icon.pin />
+              <span className="txt">
+                {locating
+                  ? "Finding you…"
+                  : `${effectiveCentre.lat.toFixed(3)}, ${effectiveCentre.lng.toFixed(3)}`}
+              </span>
+            </div>
+          </div>
+          <div className="seg" role="group" aria-label="Map or list">
+            <button aria-pressed={!listMode} onClick={() => setView("map")}>
+              <Icon.mapOn /> Map
+            </button>
+            <button aria-pressed={listMode} onClick={() => setView("list")}>
+              <Icon.list /> List
+            </button>
+          </div>
+        </header>
 
-      {showList && (
-        <div className="absolute inset-0 overflow-y-auto bg-background px-3 pb-3 pt-[124px]">
-          <ul className="mx-auto max-w-2xl space-y-2">
-            {listings.map((l) => (
-              <li key={l.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(l)}
-                  className="card w-full text-left transition-colors hover:border-brand"
-                >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <span className="font-medium">
-                      {l.preAuthorised && "⚡ "}
-                      {l.suburb} {l.state}
-                    </span>
-                    <span className="shrink-0 text-sm text-muted">
-                      {formatDistance(l.distanceKm)}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-sm text-muted">
-                    {MATERIALS_WANTED[l.wanted].label} · {VOLUME_TIERS[l.tier].label}
-                  </div>
-                </button>
-              </li>
-            ))}
-            {listings.length === 0 && !locating && (
-              <li className="card text-center text-sm text-muted">
-                Nothing within {filters.radiusKm} km. Try a wider radius.
-              </li>
+        <div className="filters">
+          <div className="filter-row">
+            <button
+              className="fchip fchip--now"
+              aria-pressed={filters.now}
+              onClick={() => applyFilters({ ...filters, now: !filters.now })}
+            >
+              <span className="bolt">
+                <Icon.bolt />
+              </span>
+              Drop now
+            </button>
+            <button
+              className="fchip"
+              aria-pressed={filters.full}
+              onClick={() => applyFilters({ ...filters, full: !filters.full, unlimited: false })}
+            >
+              Full truck
+            </button>
+            <button
+              className="fchip"
+              aria-pressed={filters.unlimited}
+              onClick={() =>
+                applyFilters({ ...filters, unlimited: !filters.unlimited, full: false })
+              }
+            >
+              Send everything
+            </button>
+            <label className="fchip fchip--select">
+              <Icon.pin />
+              <select
+                value={filters.radiusKm}
+                aria-label="Search radius"
+                onChange={(e) => applyFilters({ ...filters, radiusKm: Number(e.target.value) })}
+              >
+                {[10, 25, 50, 100].map((km) => (
+                  <option key={km} value={km}>
+                    Within {km} km
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="fclear" onClick={() => applyFilters(DEFAULT_FILTERS)}>
+              Clear
+            </button>
+          </div>
+          <div className="filter-meta">
+            {error ? (
+              <span style={{ color: "#B8480E", fontWeight: 700 }}>{error}</span>
+            ) : (
+              <>
+                <span>
+                  <strong>{locating ? "Finding you…" : countLabel}</strong>
+                  {!locating && " nearby"}
+                </span>
+                <span>·</span>
+                <span className="bolt-key">
+                  <Icon.bolt size={12} /> means claim it and go
+                </span>
+              </>
             )}
-          </ul>
+          </div>
         </div>
-      )}
 
-      <FilterBar
-        filters={filters}
-        onChange={applyFilters}
-        count={listings.length}
-        locating={locating}
-        error={error ?? mapError}
-        view={view}
-        onViewChange={setView}
-      />
+        <section className={`sheet${sheetOpen ? " open" : ""}`} aria-label="Nearby drop sites">
+          <div className="sheet-grab">
+            <i />
+          </div>
+          <button className="sheet-head" onClick={() => setSheetOpen((o) => !o)}>
+            <h2>{locating ? "Finding you…" : `${countLabel} within ${filters.radiusKm} km`}</h2>
+            <span className="sort">Nearest first</span>
+          </button>
+          <div className="sheet-list">
+            {count === 0 && !locating ? (
+              <div className="empty">
+                <Icon.pin size={40} />
+                <h3>Nothing matches that</h3>
+                <p>Try widening the radius or dropping a filter.</p>
+                <button className="btn btn-ghost" onClick={() => applyFilters(DEFAULT_FILTERS)}>
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              listings.map((l) => (
+                <SiteCard
+                  key={l.id}
+                  listing={l}
+                  active={l.id === selectedId}
+                  onSelect={() => {
+                    setSelectedId(l.id);
+                    mapRef.current?.flyTo({
+                      center: [l.approxLng, l.approxLat],
+                      zoom: 13,
+                      duration: 500,
+                    });
+                  }}
+                />
+              ))
+            )}
+          </div>
+        </section>
+      </div>
 
-      {selected && <PinSheet listing={selected} onClose={() => setSelected(null)} />}
+      <div className="mapbody">
+        <div ref={containerRef} className="mapcanvas" />
+
+        {mapBroken && (
+          <div className="map-fallback">
+            <div className="inner">
+              <Icon.mapOff />
+              <h3>Map didn&apos;t load</h3>
+              <p>Could be your connection. The sites are all still here as a list.</p>
+              <button className="btn btn-green" onClick={() => setView("list")}>
+                Show the list
+              </button>
+            </div>
+          </div>
+        )}
+
+        {canResearch && !mapBroken && (
+          <button
+            className="research"
+            onClick={() => {
+              const c = mapRef.current?.getCenter();
+              setCanResearch(false);
+              if (c) applyCentre({ lat: c.lat, lng: c.lng }, false);
+            }}
+          >
+            <Icon.refresh /> Search this area
+          </button>
+        )}
+
+        <div className="map-ctl">
+          <button className="mbtn" aria-label="Zoom in" onClick={() => mapRef.current?.zoomIn()}>
+            <Icon.plus />
+          </button>
+          <button className="mbtn" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut()}>
+            <Icon.minus />
+          </button>
+          <button
+            className="mbtn"
+            aria-label="Centre on me"
+            onClick={() =>
+              navigator.geolocation?.getCurrentPosition((p) =>
+                applyCentre({ lat: p.coords.latitude, lng: p.coords.longitude }),
+              )
+            }
+          >
+            <Icon.locate />
+          </button>
+        </div>
+
+        {selected && (
+          <Preview
+            listing={selected}
+            origin={effectiveCentre}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
 /* -------------------------------------------------------------------------- */
 
-function FilterBar({
-  filters,
-  onChange,
-  count,
-  locating,
-  error,
-  view,
-  onViewChange,
-}: {
-  filters: Filters;
-  onChange: (f: Filters) => void;
-  count: number;
-  locating: boolean;
-  error: string | null;
-  view: "map" | "list";
-  onViewChange: (v: "map" | "list") => void;
-}) {
+function Badges({ listing }: { listing: NearbyListing }) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3">
-      <div className="pointer-events-auto mx-auto max-w-2xl rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
-        <div className="flex flex-wrap items-center gap-2">
-          <Toggle
-            active={filters.instantOnly}
-            onClick={() => onChange({ ...filters, instantOnly: !filters.instantOnly })}
-          >
-            ⚡ Drop now
-          </Toggle>
-          <Toggle
-            active={filters.fullTruckOnly}
-            onClick={() => onChange({ ...filters, fullTruckOnly: !filters.fullTruckOnly })}
-          >
-            Full truck
-          </Toggle>
-          <div className="ml-auto flex overflow-hidden rounded-lg border border-border">
-            {(["map", "list"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => onViewChange(v)}
-                aria-pressed={view === v}
-                className={`px-3 py-2 text-sm font-medium capitalize ${
-                  view === v ? "bg-brand text-brand-fg" : "bg-card"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          <select
-            value={filters.radiusKm}
-            onChange={(e) => onChange({ ...filters, radiusKm: Number(e.target.value) })}
-            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
-            aria-label="Search radius"
-          >
-            {[10, 25, 50, 100].map((km) => (
-              <option key={km} value={km}>
-                Within {km} km
-              </option>
-            ))}
-          </select>
-        </div>
-        <p className="mt-2 text-xs text-muted">
-          {error
-            ? error
-            : locating
-              ? "Finding your location…"
-              : `${count} ${count === 1 ? "pin" : "pins"} nearby · ⚡ means claim it and go`}
-        </p>
-      </div>
+    <div className="badges">
+      {listing.preAuthorised ? (
+        <span className="badge badge--now">
+          <Icon.bolt size={10} /> Drop now
+        </span>
+      ) : (
+        <span className="badge badge--approve">Approve first</span>
+      )}
+      <span className="badge badge--size">
+        {listing.tier === "unlimited" ? "Send everything" : VOLUME_TIERS[listing.tier].label}
+      </span>
     </div>
   );
 }
 
-function Toggle({
+function SiteCard({
+  listing,
   active,
-  onClick,
-  children,
+  onSelect,
 }: {
+  listing: NearbyListing;
   active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
+  onSelect: () => void;
 }) {
+  const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
-        active ? "border-brand bg-brand text-brand-fg" : "border-border bg-card"
-      }`}
-    >
-      {children}
+    <button className={`card${active ? " is-active" : ""}`} onClick={onSelect}>
+      <div className="card-main">
+        <div className="card-title">
+          {listing.suburb}
+          <Badges listing={listing} />
+        </div>
+        <div className="card-meta">
+          {formatDistance(listing.distanceKm)} away · tips on the{" "}
+          {(spot?.label ?? listing.dropSpot).toLowerCase()}
+        </div>
+        <div className="card-facts">
+          <span>
+            <Icon.leaf /> {MATERIALS_WANTED[listing.wanted].label}
+          </span>
+          <span>
+            <Icon.clock /> {listedAgo(listing.createdAt)}
+          </span>
+        </div>
+        {listing.excludes.length > 0 && (
+          <div className="card-restrict">
+            Won&apos;t take:{" "}
+            {listing.excludes
+              .map((e) => EXCLUSION_LABELS[e as Exclusion]?.label.replace(/^No /, "") ?? e)
+              .join(", ")}
+          </div>
+        )}
+      </div>
+      <span className="card-go">
+        <Icon.chevron />
+      </span>
     </button>
   );
 }
 
-function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () => void }) {
-  const tier = VOLUME_TIERS[listing.tier];
+function Preview({
+  listing,
+  origin,
+  onClose,
+}: {
+  listing: NearbyListing;
+  origin: Coords;
+  onClose: () => void;
+}) {
   const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
-  const router = useRouter();
-  const [claiming, startClaim] = useTransition();
-  const [claimError, setClaimError] = useState<string | null>(null);
-
-  function onClaim() {
-    setClaimError(null);
-    startClaim(async () => {
-      const res = await claimListing(listing.id);
-      if (res.error) setClaimError(res.error);
-      else if (res.dropId) router.push(`/drops/${res.dropId}`);
-    });
-  }
-
+  // Pass where we searched from, so the detail page shows the same distance
+  // as the card that was tapped rather than recomputing from nothing.
+  const href = `/sites/${listing.id}?lat=${origin.lat}&lng=${origin.lng}`;
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 p-3">
-      <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-5 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {listing.suburb} {listing.state}
-            </h2>
-            <p className="mt-0.5 text-sm text-muted">
-              {formatDistance(listing.distanceKm)} away · approximate location
-            </p>
+    <div className="preview" role="dialog" aria-label="Site preview">
+      <button className="preview-close" onClick={onClose} aria-label="Close">
+        <Icon.close />
+      </button>
+      <div className="preview-top">
+        <div className="thumb">
+          {listing.photoKey ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={`/api/photos/${listing.photoKey}`} alt="" loading="lazy" />
+          ) : (
+            <Icon.photo />
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3>
+            {listing.suburb} {listing.state}
+          </h3>
+          <Badges listing={listing} />
+          <div className="preview-meta">
+            {formatDistance(listing.distanceKm)} away · tips on the{" "}
+            {(spot?.label ?? listing.dropSpot).toLowerCase()}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="shrink-0 text-2xl leading-none text-muted hover:text-foreground"
-          >
-            ×
-          </button>
         </div>
-
-        <div className="mt-4 space-y-2 text-sm">
-          <p>
-            <span className="font-medium">Wants:</span>{" "}
-            {MATERIALS_WANTED[listing.wanted].label}
-          </p>
-          <p>
-            <span className="font-medium">Will take:</span> {tier.label}
-          </p>
-          <p>
-            <span className="font-medium">Tip it:</span> {spot?.label ?? listing.dropSpot}
-          </p>
-          {listing.accessNotes && (
-            <p className="rounded-lg border border-border bg-background p-3">
-              {listing.accessNotes}
-            </p>
-          )}
-          {listing.excludes.length > 0 && (
-            <p className="text-accent">
-              Won&apos;t accept:{" "}
-              {listing.excludes
-                .map((e) => EXCLUSION_LABELS[e as Exclusion]?.label.replace(/^No /, "") ?? e)
-                .join(", ")}
-            </p>
-          )}
-        </div>
-
-        {listing.photoKey && (
-          <figure className="mt-4">
-            <figcaption className="mb-1.5 text-xs font-medium text-muted">
-              Where they want it tipped
-            </figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/api/photos/${listing.photoKey}`}
-              alt="The spot the gardener wants the mulch tipped"
-              loading="lazy"
-              className="w-full rounded-lg border border-border"
-            />
-          </figure>
-        )}
-
-        {listing.preAuthorised ? (
-          <>
-            <button
-              type="button"
-              onClick={onClaim}
-              disabled={claiming}
-              className="btn-primary mt-5 w-full"
-            >
-              {claiming ? "Claiming…" : "⚡ Claim this drop"}
-            </button>
-            <p className="mt-2 text-center text-xs text-muted">
-              You&apos;ll get the street address straight away.
-            </p>
-          </>
-        ) : (
-          <>
-            <button type="button" disabled className="btn-primary mt-5 w-full">
-              Offer a drop
-            </button>
-            <p className="mt-2 text-center text-xs text-muted">
-              This gardener wants to approve first — that loop lands next.
-            </p>
-          </>
-        )}
-
-        {claimError && (
-          <p className="mt-3 rounded-lg border border-border bg-background p-3 text-sm text-accent">
-            {claimError}
-          </p>
-        )}
+      </div>
+      <div className="preview-facts">
+        <span>
+          <Icon.leaf /> {MATERIALS_WANTED[listing.wanted].label}
+        </span>
+        <span>
+          <Icon.box /> {listingRef(listing.id)}
+        </span>
+      </div>
+      <div className="preview-actions">
+        <Link className="btn btn-green btn-block" href={href}>
+          View site <Icon.arrow />
+        </Link>
       </div>
     </div>
   );
@@ -514,14 +524,17 @@ function PinSheet({ listing, onClose }: { listing: NearbyListing; onClose: () =>
 
 /* -------------------------------------------------------------------------- */
 
+function listedAgo(createdAt: Date | string): string {
+  const days = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000);
+  if (days < 1) return "Listed today";
+  if (days === 1) return "Listed yesterday";
+  return `Listed ${days} days ago`;
+}
+
 /**
  * OpenFreeMap by default: free vector tiles, no key, no signup, and — unlike
  * raw OpenStreetMap raster tiles — explicitly fine for production traffic.
- * The OSM tile usage policy forbids exactly this kind of app, so shipping on
- * it was borrowed time.
- *
- * MapTiler still wins if a key is set: same rendering, but a paid CDN with an
- * uptime commitment behind it.
+ * MapTiler takes over when a key is set: same rendering, paid CDN behind it.
  */
 function buildStyle(maptilerKey: string | null): string {
   return maptilerKey

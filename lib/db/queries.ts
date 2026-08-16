@@ -18,6 +18,7 @@ export type NearbyListing = {
   accessNotes: string | null;
   photoKey: string | null;
   preAuthorised: boolean;
+  createdAt: Date;
   distanceKm: number;
 };
 
@@ -74,6 +75,7 @@ export async function findNearbyListings(
       accessNotes: listings.accessNotes,
       photoKey: listings.photoKey,
       preAuthorised: listings.preAuthorised,
+      createdAt: listings.createdAt,
       distanceKm: distance.as("distance_km"),
     })
     .from(listings)

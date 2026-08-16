@@ -8,9 +8,7 @@ import { drops, listings } from "@/lib/db/schema";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { newKey, putObject } from "@/lib/storage";
-
-/** How long a claimed drop stays live before we assume it fell through. */
-const CLAIM_WINDOW_HOURS = 24;
+import { CLAIM_WINDOW_HOURS } from "@/lib/listing-options";
 
 export type ClaimResult = { dropId?: string; error?: string };
 

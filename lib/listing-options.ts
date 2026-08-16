@@ -128,6 +128,15 @@ export type DropSpotKey = keyof typeof DROP_SPOTS;
 export const DROP_SPOT_KEYS = Object.keys(DROP_SPOTS) as DropSpotKey[];
 
 /**
+ * How long a claim holds a site. Six hours is a working day's worth of
+ * flexibility without letting one crew sit on a pin nobody else can take.
+ *
+ * Lives here rather than beside the action that uses it: a "use server" module
+ * may only export async functions.
+ */
+export const CLAIM_WINDOW_HOURS = 6;
+
+/**
  * A pin nobody has confirmed in this long gets paused. Stale pins are what
  * make drivers stop opening the app — three dead calls and they're gone.
  */

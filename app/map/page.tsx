@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
@@ -12,19 +11,7 @@ export default async function MapPage() {
   // the same rule independently, so this is convenience rather than the gate.
   if (!isApprovedSupplier(user)) redirect("/dashboard");
 
-  return (
-    <main className="flex flex-1 flex-col">
-      <header className="border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
-            ← Dashboard
-          </Link>
-          <span className="text-sm font-semibold">Drops near you</span>
-        </div>
-      </header>
-
-      {/* MapTiler keys are public by design and restricted by domain. */}
-      <SupplierMap maptilerKey={env.MAPTILER_KEY ?? null} />
-    </main>
-  );
+  // MapTiler keys are public by design and restricted by domain; absent one,
+  // the map falls back to OpenFreeMap, which needs no key at all.
+  return <SupplierMap maptilerKey={env.MAPTILER_KEY ?? null} />;
 }
