@@ -18,6 +18,7 @@ export type NearbyListing = {
   accessNotes: string | null;
   photoKey: string | null;
   preAuthorised: boolean;
+  callFirst: boolean;
   /** A crew already holds this one, so it can't be claimed again. */
   pending: boolean;
   createdAt: Date;
@@ -97,6 +98,7 @@ export async function findNearbyListings(
       accessNotes: listings.accessNotes,
       photoKey: listings.photoKey,
       preAuthorised: listings.preAuthorised,
+      callFirst: listings.callFirst,
       pending: pending.as("pending"),
       createdAt: listings.createdAt,
       distanceKm: distance.as("distance_km"),

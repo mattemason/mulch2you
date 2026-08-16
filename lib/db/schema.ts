@@ -197,10 +197,19 @@ export const listings = pgTable(
     photoKey: text("photo_key"),
 
     /**
-     * "Just dump it, don't ask me first." Turns the pin into a one-tap claim
-     * and is what makes the marketplace work at truck-is-full-right-now speed.
+     * Claimable without asking. New listings always set this: waiting on a
+     * reply is the friction that stops a driver with a full truck, and the
+     * thing gardeners actually want isn't a veto — it's contact.
+     *
+     * Kept as a column because listings made before that change may still be
+     * false, and the offer/accept flow has to keep working for them.
      */
     preAuthorised: boolean("pre_authorised").notNull().default(false),
+    /**
+     * "Ring me before you come." Control without a round trip — the driver
+     * still claims and gets the address instantly, they just phone ahead.
+     */
+    callFirst: boolean("call_first").notNull().default(false),
 
     status: listingStatus("status").notNull().default("active"),
     /** Staleness clock — auto-paused by cron if not re-confirmed in 30 days. */

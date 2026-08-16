@@ -1,0 +1,1 @@
+ALTER TABLE "listings" ADD COLUMN "call_first" boolean DEFAULT false NOT NULL;

@@ -78,12 +78,13 @@ async function main() {
       tier: "medium",
       maxVolumeM3: "6",
       dropSpot: "driveway",
+      preAuthorised: true,
       ...extra,
     });
   }
 
-  await seed("Katoomba", KATOOMBA, { preAuthorised: true });
-  await seed("Leura", LEURA);
+  await seed("Katoomba", KATOOMBA);
+  await seed("Leura", LEURA, { preAuthorised: false });
   await seed("Penrith", PENRITH, { tier: "unlimited", maxVolumeM3: null });
   await seed("Melbourne", MELBOURNE);
   await seed("Katoomba (paused)", KATOOMBA, { status: "paused" });
@@ -121,7 +122,11 @@ async function main() {
   // --- filters -----------------------------------------------------------
   console.log("\nFilters:");
   const instant = await findNearbyListings(KATOOMBA, { radiusKm: 25, preAuthorisedOnly: true }, database);
-  check("instant-claim filter", instant.length === 1 && instant[0].preAuthorised, `${instant.length} pin(s)`);
+  check(
+    "instant-claim filter",
+    instant.length === 1 && instant.every((l) => l.preAuthorised),
+    `${instant.length} pin(s)`,
+  );
 
   const unlimited = await findNearbyListings(KATOOMBA, { radiusKm: 50, tier: "unlimited" }, database);
   check("tier filter keeps matching pins", unlimited.some((l) => l.suburb === "Penrith"));

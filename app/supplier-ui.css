@@ -1160,3 +1160,9 @@
   background: #eceee8;
   color: #5f6a58;
 }
+
+/* Not a warning — just something to do before setting off. */
+.m2y .badge--call {
+  background: #eaf0f7;
+  color: #3b5a82;
+}

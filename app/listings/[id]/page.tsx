@@ -15,6 +15,7 @@ import {
   type DropSpotKey,
 } from "@/lib/listing-options";
 import { deleteListing, setListingStatus } from "../actions";
+import { ListingPhotoForm } from "./photo-form";
 
 export default async function ListingPage({ params }: PageProps<"/listings/[id]">) {
   const user = await getCurrentUser();
@@ -64,12 +65,22 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
                 .join(", ")
             )}
           </Row>
-          <Row label="Approval">
-            {listing.preAuthorised
-              ? "Drivers can drop without asking"
-              : "We'll text you before each drop"}
+          <Row label="Before they come">
+            {listing.callFirst
+              ? "Drivers ring you first"
+              : "Drivers can just turn up"}
           </Row>
         </dl>
+
+        <section className="mt-10 border-t border-border pt-8">
+          <h2 className="font-semibold">Photo of the drop spot</h2>
+          <p className="mt-1 text-sm text-muted">
+            {listing.photoKey
+              ? "Drivers see this before they decide whether their truck fits."
+              : "You haven't added one. It's the single most useful thing on your listing — drivers check it before committing."}
+          </p>
+          <ListingPhotoForm listingId={listing.id} currentPhotoKey={listing.photoKey} />
+        </section>
 
         {listing.status === "active" && (
           <p className="mt-8 text-sm text-muted">

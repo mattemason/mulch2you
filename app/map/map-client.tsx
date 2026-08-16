@@ -520,6 +520,7 @@ function Badges({ listing }: { listing: NearbyListing }) {
       <span className="badge badge--size">
         {listing.tier === "unlimited" ? "Send everything" : VOLUME_TIERS[listing.tier].label}
       </span>
+      {listing.callFirst && <span className="badge badge--call">Ring first</span>}
     </div>
   );
 }

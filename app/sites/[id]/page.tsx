@@ -90,7 +90,10 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
             <Icon.back />
           </Link>
           <h1>
-            {listing.suburb} <span className="ref">· {listingRef(listing.id)}</span>
+            {listing.suburb}{" "}
+            <span className="ref" title="Reference for this site — quote it if you ring us">
+              ref {listingRef(listing.id)}
+            </span>
           </h1>
         </div>
       </header>
@@ -153,13 +156,13 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
               n={listing.tier === "unlimited" ? "Send everything you've got" : "Don't tip more than this"}
             />
             <Fact
-              icon={<Icon.bolt />}
-              k="Claiming"
-              v={listing.preAuthorised ? "Instant" : "Needs approval"}
+              icon={<Icon.phone size={13} />}
+              k="Before you go"
+              v={listing.callFirst ? "Ring them first" : "Just turn up"}
               n={
-                listing.preAuthorised
-                  ? "Address released straight away"
-                  : "The gardener has to say yes first"
+                listing.callFirst
+                  ? "They've asked for a call before you arrive"
+                  : "No call needed — claim it and go"
               }
             />
           </div>

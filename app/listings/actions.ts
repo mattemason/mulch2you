@@ -94,7 +94,7 @@ const listingSchema = z.object({
   dropSpot: z.enum(DROP_SPOT_KEYS),
   accessNotes: z.string().trim().max(500).optional(),
   excludes: z.array(z.enum(EXCLUSIONS)).default([]),
-  preAuthorised: z.boolean().default(false),
+  callFirst: z.boolean().default(false),
 });
 
 export type ListingState = { error?: string };
@@ -121,7 +121,7 @@ export async function createListing(
     dropSpot: formData.get("dropSpot"),
     accessNotes: formData.get("accessNotes") || undefined,
     excludes: formData.getAll("excludes"),
-    preAuthorised: formData.get("preAuthorised") === "on",
+    callFirst: formData.get("callFirst") === "on",
   });
 
   if (!parsed.success) {
@@ -166,7 +166,11 @@ export async function createListing(
     dropSpot: d.dropSpot,
     accessNotes: d.accessNotes ?? null,
     photoKey,
-    preAuthorised: d.preAuthorised,
+    // Always claimable. Waiting on a reply is the friction that stops a driver
+    // with a full truck; what gardeners want is contact, not a veto — which is
+    // what callFirst gives them.
+    preAuthorised: true,
+    callFirst: d.callFirst,
   });
 
   redirect("/dashboard");
@@ -207,4 +211,61 @@ export async function deleteListing(listingId: string) {
   if (row?.photoKey) await deleteObject(row.photoKey);
   revalidatePath("/dashboard");
   redirect("/dashboard");
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type PhotoState = { error?: string; ok?: string };
+
+/**
+ * Adds or replaces the drop-spot photo after the fact.
+ *
+ * The wizard makes it optional so it can't block a first listing, which means
+ * most pins arrive without one — and it's the field drivers rely on most.
+ * Being able to add it later is the difference between "I'll do it now" and
+ * deleting the pin and starting again.
+ */
+export async function saveListingPhoto(
+  listingId: string,
+  _prev: PhotoState,
+  formData: FormData,
+): Promise<PhotoState> {
+  const { where } = await ownedListing(listingId);
+
+  const [existing] = await db
+    .select({ photoKey: listings.photoKey })
+    .from(listings)
+    .where(where);
+  if (!existing) return { error: "We couldn't find that listing." };
+
+  if (formData.get("remove") === "yes") {
+    await db.update(listings).set({ photoKey: null }).where(where);
+    if (existing.photoKey) await deleteObject(existing.photoKey);
+    revalidatePath(`/listings/${listingId}`);
+    return { ok: "Photo removed." };
+  }
+
+  const photo = formData.get("photo");
+  if (!(photo instanceof File) || photo.size === 0) {
+    return { error: "Pick a photo first." };
+  }
+
+  let photoKey: string;
+  try {
+    const processed = await processUploadedImage(await photo.arrayBuffer());
+    photoKey = newKey("listing");
+    await putObject(photoKey, processed.data);
+  } catch (err) {
+    if (err instanceof ImageError) return { error: err.message };
+    console.error("listing photo upload failed", err);
+    return { error: "We couldn't save that photo. Try again." };
+  }
+
+  await db.update(listings).set({ photoKey }).where(where);
+  // Only after the new one is safely stored, so a failure can't leave the
+  // listing with no photo at all.
+  if (existing.photoKey) await deleteObject(existing.photoKey);
+
+  revalidatePath(`/listings/${listingId}`);
+  return { ok: "Photo saved — drivers will see it on the map." };
 }

@@ -184,22 +184,26 @@ function DetailsStep({ address, onBack }: { address: ConfirmedAddress; onBack: (
         </div>
       </fieldset>
 
-      {/* Pre-auth ---------------------------------------------------------- */}
+      {/* Contact ----------------------------------------------------------- */}
       <fieldset className="mt-8">
-        <legend className="label">Do we need to check with you first?</legend>
+        <legend className="label">Before they turn up</legend>
+        <p className="mb-3 text-xs text-muted">
+          Any approved crew can claim your pin and will get your address. That&apos;s
+          what gets mulch to you quickly — a driver with a full truck picks the
+          drop they can act on now.
+        </p>
         <label className="card flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
-            name="preAuthorised"
+            name="callFirst"
             className="mt-1 size-4 accent-[var(--brand)]"
           />
           <span>
-            <span className="block font-medium">Drop anytime — don&apos;t ask me first</span>
+            <span className="block font-medium">Ring me before you come</span>
             <span className="mt-0.5 block text-sm text-muted">
-              Far and away the best way to actually get mulch. Drivers decide
-              with a full truck in front of them, and a pin they can claim on
-              the spot beats one that needs a phone call. Leave it off and
-              we&apos;ll text you for approval each time instead.
+              Tick this if you need to open a gate, move a car, or just want the
+              heads-up. The driver still claims it on the spot — they phone
+              first instead of waiting on a reply.
             </span>
           </span>
         </label>

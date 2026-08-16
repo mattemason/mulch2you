@@ -50,6 +50,13 @@
       "when": 1786846043824,
       "tag": "0006_drop_reminders",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786848589465,
+      "tag": "0007_add_call_first",
+      "breakpoints": true
     }
   ]
 }
