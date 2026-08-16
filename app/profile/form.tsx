@@ -15,6 +15,8 @@ export function ProfileForm({
     businessName: string;
     abn: string;
     truckCapacityM3: string;
+    website: string;
+    contactEmail: string;
   };
 }) {
   const [state, action] = useActionState<ProfileState, FormData>(saveProfile, {});
@@ -54,6 +56,19 @@ export function ProfileForm({
             name="abn"
             defaultValue={defaults.abn}
             hint="Used to verify you're a real tree service. Not shown to gardeners."
+          />
+          <Field
+            label="Website"
+            name="website"
+            defaultValue={defaults.website}
+            hint="Shown to gardeners, so they can see who's turning up."
+          />
+          <Field
+            label="Business email"
+            name="contactEmail"
+            type="email"
+            defaultValue={defaults.contactEmail}
+            hint="If the office reads mail at a different address to your sign-in."
           />
           <Field
             label="Truck capacity (m³)"

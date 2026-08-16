@@ -17,6 +17,8 @@ import {
 } from "@/lib/listing-options";
 import { Icon } from "@/app/map/icons";
 import { ClaimBar } from "./claim-bar";
+import { ApproxMap } from "./approx-map";
+import { env } from "@/lib/env";
 import "@/app/supplier-ui.css";
 
 /**
@@ -214,7 +216,11 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
         <section className="panelcard">
           <h2>Roughly here</h2>
           <div className="minimap">
-            <ApproxMap suburb={listing.suburb} />
+            <ApproxMap
+              lat={listing.approxLat}
+              lng={listing.approxLng}
+              maptilerKey={env.MAPTILER_KEY ?? null}
+            />
           </div>
           <div className="approx">
             <Icon.shield />
@@ -282,59 +288,6 @@ function Fact({
       <div className="v">{v}</div>
       {n && <div className="n">{n}</div>}
     </div>
-  );
-}
-
-/** Illustrative — the real position is deliberately not on this page. */
-function ApproxMap({ suburb }: { suburb: string }) {
-  return (
-    <svg viewBox="0 0 600 220" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Approximate location">
-      <rect width="600" height="220" fill="#EEF2E8" />
-      <path d="M20 150 q60-34 130-12 q34 50-18 86 q-78 20-112-26z" fill="#DCE9D3" />
-      <path
-        d="M-20 70 q120 34 214-8 q104-46 214 8 q78 38 256 6"
-        stroke="#CBDDE8"
-        strokeWidth="30"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <g stroke="#fff" fill="none" strokeLinecap="round">
-        <path d="M0 40h600" strokeWidth="10" />
-        <path d="M0 120h600" strokeWidth="13" />
-        <path d="M0 186h600" strokeWidth="8" />
-        <path d="M120 0v220" strokeWidth="11" />
-        <path d="M320 0v220" strokeWidth="9" />
-        <path d="M470 0v220" strokeWidth="10" />
-      </g>
-      <g fill="#E2E7DA">
-        <rect x="150" y="140" width="60" height="34" rx="4" />
-        <rect x="360" y="52" width="66" height="36" rx="4" />
-        <rect x="500" y="140" width="58" height="34" rx="4" />
-      </g>
-      <circle cx="300" cy="112" r="62" fill="#2E7D22" opacity=".14" />
-      <circle
-        cx="300"
-        cy="112"
-        r="62"
-        fill="none"
-        stroke="#2E7D22"
-        strokeWidth="2"
-        strokeDasharray="7 6"
-        opacity=".55"
-      />
-      <g transform="translate(300,112)">
-        <path
-          d="M0-34a16 16 0 0 1 16 16c0 12-16 25-16 25S-16 -6-16 -18A16 16 0 0 1 0-34z"
-          fill="#E8631A"
-          stroke="#fff"
-          strokeWidth="2.4"
-        />
-        <circle cx="0" cy="-18" r="6" fill="#fff" />
-      </g>
-      <text x="16" y="206" fontSize="12" fontWeight="700" fill="#8A9280">
-        {suburb.toUpperCase()}
-      </text>
-    </svg>
   );
 }
 

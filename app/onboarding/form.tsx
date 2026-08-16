@@ -56,6 +56,37 @@ export function OnboardingForm({
             </label>
             <input id="abn" name="abn" inputMode="numeric" className="field" />
           </div>
+          <div>
+            <label className="label" htmlFor="website">
+              Website <span className="font-normal text-muted">(optional)</span>
+            </label>
+            <input
+              id="website"
+              name="website"
+              inputMode="url"
+              placeholder="acmetrees.com.au"
+              className="field"
+            />
+            <p className="mt-1 text-xs text-muted">
+              Shown to gardeners, so they can see who&apos;s turning up.
+            </p>
+          </div>
+          <div>
+            <label className="label" htmlFor="contactEmail">
+              Business email <span className="font-normal text-muted">(optional)</span>
+            </label>
+            <input
+              id="contactEmail"
+              name="contactEmail"
+              type="email"
+              placeholder="office@acmetrees.com.au"
+              className="field"
+            />
+            <p className="mt-1 text-xs text-muted">
+              If the office reads mail at a different address to the one you
+              sign in with.
+            </p>
+          </div>
         </>
       )}
 

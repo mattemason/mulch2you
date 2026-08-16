@@ -57,6 +57,13 @@
       "when": 1786848589465,
       "tag": "0007_add_call_first",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786850145256,
+      "tag": "0008_supplier_contact",
+      "breakpoints": true
     }
   ]
 }

@@ -57,6 +57,8 @@ export default async function ProfilePage() {
               businessName: user.supplierProfile?.businessName ?? "",
               abn: user.supplierProfile?.abn ?? "",
               truckCapacityM3: user.supplierProfile?.truckCapacityM3 ?? "",
+              website: user.supplierProfile?.website ?? "",
+              contactEmail: user.supplierProfile?.contactEmail ?? "",
             }}
           />
         </section>

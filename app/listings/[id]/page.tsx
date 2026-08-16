@@ -57,7 +57,29 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
             </h1>
             <p className="mt-1 text-sm text-muted">{listing.addressLine}</p>
           </div>
-          <StatusPill status={listing.status} />
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <StatusPill status={listing.status} />
+            <form
+              action={async () => {
+                "use server";
+                await setListingStatus(id, listing.status === "active" ? "paused" : "active");
+              }}
+            >
+              <button type="submit" className="btn-secondary py-2 text-sm">
+                {listing.status === "active" ? "Pause" : "Reactivate"}
+              </button>
+            </form>
+            <form
+              action={async () => {
+                "use server";
+                await deleteListing(id);
+              }}
+            >
+              <button type="submit" className="btn-secondary py-2 text-sm text-accent">
+                Delete
+              </button>
+            </form>
+          </div>
         </div>
 
         <dl className="mt-8 space-y-4">
@@ -125,7 +147,11 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
               ? "Drivers see this before they decide whether their truck fits."
               : "You haven't added one. It's the single most useful thing on your listing — drivers check it before committing."}
           </p>
-          <ListingPhotoForm listingId={listing.id} currentPhotoKey={listing.photoKey} />
+          <ListingPhotoForm
+            key={listing.photoKey ?? "none"}
+            listingId={listing.id}
+            currentPhotoKey={listing.photoKey}
+          />
         </section>
 
         {listing.status === "active" && (
@@ -136,29 +162,6 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
           </p>
         )}
 
-        <div className="mt-8 flex flex-wrap gap-3 border-t border-border pt-8">
-          <form
-            action={async () => {
-              "use server";
-              await setListingStatus(id, listing.status === "active" ? "paused" : "active");
-            }}
-          >
-            <button type="submit" className="btn-secondary">
-              {listing.status === "active" ? "Pause this pin" : "Make it active again"}
-            </button>
-          </form>
-
-          <form
-            action={async () => {
-              "use server";
-              await deleteListing(id);
-            }}
-          >
-            <button type="submit" className="btn-secondary text-accent">
-              Delete
-            </button>
-          </form>
-        </div>
       </div>
     </main>
   );

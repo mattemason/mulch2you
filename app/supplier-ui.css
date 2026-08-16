@@ -1174,3 +1174,8 @@
   background: #eaf0f7;
   color: #3b5a82;
 }
+
+.m2y .minimap-canvas {
+  position: absolute;
+  inset: 0;
+}

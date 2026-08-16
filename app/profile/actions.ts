@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { supplierProfiles, users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { normaliseAuMobile } from "@/lib/phone";
+import { normaliseUrl } from "@/lib/url";
 
 export type ProfileState = { error?: string; ok?: string };
 
@@ -24,6 +25,14 @@ const supplierSchema = z.object({
     .string()
     .trim()
     .refine((v) => v === "" || (Number(v) > 0 && Number(v) <= 50), "Between 1 and 50 m³"),
+  website: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[\w.-]+\.[a-z]{2,}/i.test(v), "That doesn't look like a website"),
+  contactEmail: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v), "That doesn't look like an email"),
 });
 
 const receiverSchema = z.object({
@@ -58,6 +67,8 @@ export async function saveProfile(
           businessName: parsed.data.businessName,
           abn: parsed.data.abn || null,
           truckCapacityM3: parsed.data.truckCapacityM3 || null,
+          website: normaliseUrl(parsed.data.website),
+          contactEmail: parsed.data.contactEmail || null,
         })
         .where(eq(supplierProfiles.userId, user.id));
     });

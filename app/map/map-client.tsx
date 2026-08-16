@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LngLatBounds, Map as MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
+import { LngLatBounds, Map as MapLibreMap, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/app/supplier-ui.css";
+import "./maplibre-setup";
 import type { NearbyListing } from "@/lib/db/queries";
 import { formatDistance, type Coords } from "@/lib/geo";
 import { listingRef } from "@/lib/refs";
@@ -26,14 +27,6 @@ import { LocationPicker } from "./location-picker";
 /** Sydney GPO — only if the browser won't or can't give up a location. */
 const FALLBACK_CENTRE: Coords = { lat: -33.8688, lng: 151.2093 };
 const LOCATE_TIMEOUT_MS = 9000;
-
-/**
- * MapLibre would otherwise resolve its worker relative to the bundled chunk,
- * where the file doesn't exist — the request 404s to Next's HTML error page and
- * the worker never starts, leaving a map that renders controls and markers over
- * a blank canvas. scripts/copy-maplibre-worker.mjs puts it here.
- */
-setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
 /**
  * Inline so markers never depend on the CSS build having emitted a utility.

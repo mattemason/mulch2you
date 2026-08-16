@@ -59,16 +59,18 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
           {isSupplier ? `${listing.suburb} ${listing.state}` : "Your mulch delivery"}
         </h1>
 
-        {/* Contact details, released because the drop is accepted ------------ */}
+        {/* Contact details, released because the drop is accepted. Dark green
+            so the address reads as the one thing on this screen that matters,
+            with the action in orange beside it. */}
         {isSupplier && drop.status !== "offered" && (
-          <div className="card mt-6">
-            <div className="text-xs text-muted">Deliver to</div>
-            <div className="mt-1 text-lg font-medium">
+          <div className="mt-6 rounded-xl bg-brand p-5 text-brand-fg">
+            <div className="text-xs uppercase tracking-wide opacity-80">Deliver to</div>
+            <div className="mt-1 text-lg font-semibold">
               {listing.addressLine}, {listing.suburb} {listing.state} {listing.postcode}
             </div>
-            <div className="mt-3 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3">
               <a
-                className="btn-secondary py-2 text-sm"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#E8631A] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-95"
                 href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
                   `${listing.addressLine}, ${listing.suburb} ${listing.state} ${listing.postcode}`,
                 )}`}
@@ -78,7 +80,10 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
                 Directions
               </a>
               {owner.phone && (
-                <a className="btn-secondary py-2 text-sm" href={`tel:${owner.phone}`}>
+                <a
+                  className="inline-flex items-center gap-2 rounded-lg border border-white/35 px-4 py-2.5 text-sm font-semibold hover:bg-white/10"
+                  href={`tel:${owner.phone}`}
+                >
                   Call {owner.name?.split(" ")[0] ?? "them"} · {formatAuMobile(owner.phone)}
                 </a>
               )}

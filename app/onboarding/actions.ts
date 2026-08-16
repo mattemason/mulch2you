@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { supplierProfiles, users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { normaliseAuMobile } from "@/lib/phone";
+import { normaliseUrl } from "@/lib/url";
 
 export type OnboardingState = { error?: string };
 
@@ -26,6 +27,16 @@ const supplierSchema = z.object({
     .refine((v) => v === "" || /^\d{11}$/.test(v), "An ABN is 11 digits")
     .optional(),
   phone: z.string().trim().min(1, "A mobile number is required"),
+  website: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[\w.-]+\.[a-z]{2,}/i.test(v), "That doesn't look like a website")
+    .optional(),
+  contactEmail: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v), "That doesn't look like an email")
+    .optional(),
 });
 
 export async function completeOnboarding(
@@ -58,10 +69,17 @@ export async function completeOnboarding(
           userId: user.id,
           businessName: parsed.data.businessName,
           abn: parsed.data.abn || null,
+          website: normaliseUrl(parsed.data.website),
+          contactEmail: parsed.data.contactEmail || null,
         })
         .onConflictDoUpdate({
           target: supplierProfiles.userId,
-          set: { businessName: parsed.data.businessName, abn: parsed.data.abn || null },
+          set: {
+            businessName: parsed.data.businessName,
+            abn: parsed.data.abn || null,
+            website: normaliseUrl(parsed.data.website),
+            contactEmail: parsed.data.contactEmail || null,
+          },
         });
     });
 
@@ -78,3 +96,4 @@ export async function completeOnboarding(
 
   redirect("/dashboard");
 }
+

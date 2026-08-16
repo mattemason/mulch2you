@@ -2,6 +2,7 @@ import { desc, eq, isNotNull, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { supplierProfiles, users } from "@/lib/db/schema";
 import { formatAuMobile } from "@/lib/phone";
+import { displayUrl } from "@/lib/url";
 import { ApprovalButton } from "../approval-button";
 
 export default async function AdminSuppliersPage() {
@@ -9,6 +10,8 @@ export default async function AdminSuppliersPage() {
     userId: supplierProfiles.userId,
     businessName: supplierProfiles.businessName,
     abn: supplierProfiles.abn,
+    website: supplierProfiles.website,
+    contactEmail: supplierProfiles.contactEmail,
     verifiedAt: supplierProfiles.verifiedAt,
     createdAt: supplierProfiles.createdAt,
     name: users.name,
@@ -75,6 +78,8 @@ type Supplier = {
   userId: string;
   businessName: string;
   abn: string | null;
+  website: string | null;
+  contactEmail: string | null;
   name: string | null;
   email: string | null;
   phone: string | null;
@@ -90,6 +95,22 @@ function SupplierCard({ supplier, approved }: { supplier: Supplier; approved: bo
             {supplier.name}
             {supplier.email && ` · ${supplier.email}`}
           </div>
+          {(supplier.website || supplier.contactEmail) && (
+            <div>
+              {supplier.website && (
+                <a
+                  href={supplier.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brand hover:underline"
+                >
+                  {displayUrl(supplier.website)}
+                </a>
+              )}
+              {supplier.website && supplier.contactEmail && " · "}
+              {supplier.contactEmail}
+            </div>
+          )}
           <div>
             {supplier.phone ? formatAuMobile(supplier.phone) : "No mobile"}
             {supplier.abn ? (

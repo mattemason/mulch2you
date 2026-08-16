@@ -142,6 +142,13 @@ export const supplierProfiles = pgTable("supplier_profiles", {
     .references(() => users.id, { onDelete: "cascade" }),
   businessName: text("business_name").notNull(),
   abn: text("abn"),
+  /** Public site, so a gardener can see who's turning up before they arrive. */
+  website: text("website"),
+  /**
+   * Where the business reads its mail, which is often not the address someone
+   * signs in with — a job goes to office@ while the owner logs in personally.
+   */
+  contactEmail: text("contact_email"),
   truckCapacityM3: numeric("truck_capacity_m3", { precision: 4, scale: 1 }),
   insuranceDocUrl: text("insurance_doc_url"),
   /**
