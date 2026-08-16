@@ -134,8 +134,17 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
           </div>
         </div>
 
-        {/* What's happening right now, above the settings that never change. */}
-        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+        {/* What's happening right now, above the settings that never change.
+            A crew being on the way is the one state worth interrupting for, so
+            it inverts to dark green — the idle and paused states stay a plain
+            card, since green reads as good news. Fixed hex rather than the
+            brand token, which lightens in dark mode and would strand the white
+            text on a pale ground. */}
+        <div
+          className={`mt-6 rounded-xl border p-4 ${
+            inFlight ? "border-transparent bg-[#2f4a1c] text-white" : "border-border bg-card"
+          }`}
+        >
           <div className="font-medium">
             {inFlight?.status === "accepted"
               ? `${inFlight.businessName ?? inFlight.crewName ?? "A crew"} is on the way`
@@ -145,7 +154,7 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
                   ? "Live on the map"
                   : "Paused — drivers can't see this pin"}
           </div>
-          <div className="mt-1 text-sm text-muted">
+          <div className={`mt-1 text-sm ${inFlight ? "text-white/75" : "text-muted"}`}>
             {inFlight?.status === "accepted"
               ? "They have your address. You'll see their photo here once it's tipped."
               : inFlight?.status === "offered"
@@ -158,14 +167,14 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
           </div>
 
           {inFlight && (
-            <dl className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm">
+            <dl className="mt-4 space-y-1.5 border-t border-white/20 pt-4 text-sm">
               {inFlight.businessName && (
                 <CrewRow label="Business">{inFlight.businessName}</CrewRow>
               )}
               {inFlight.crewName && <CrewRow label="Contact">{inFlight.crewName}</CrewRow>}
               {inFlight.crewPhone && (
                 <CrewRow label="Phone">
-                  <a href={`tel:${inFlight.crewPhone}`} className="text-brand hover:underline">
+                  <a href={`tel:${inFlight.crewPhone}`} className={CREW_LINK}>
                     {formatAuMobile(inFlight.crewPhone)}
                   </a>
                 </CrewRow>
@@ -174,7 +183,7 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
                 <CrewRow label="Email">
                   <a
                     href={`mailto:${inFlight.contactEmail ?? inFlight.crewEmail}`}
-                    className="text-brand hover:underline"
+                    className={CREW_LINK}
                   >
                     {inFlight.contactEmail ?? inFlight.crewEmail}
                   </a>
@@ -182,17 +191,12 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
               )}
               {inFlight.website && (
                 <CrewRow label="Website">
-                  <a
-                    href={inFlight.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-brand hover:underline"
-                  >
+                  <a href={inFlight.website} target="_blank" rel="noreferrer" className={CREW_LINK}>
                     {displayUrl(inFlight.website)}
                   </a>
                 </CrewRow>
               )}
-              <p className="pt-1 text-xs text-muted">{CREW_COMMITTED_HINT}</p>
+              <p className="pt-1 text-xs text-white/60">{CREW_COMMITTED_HINT}</p>
             </dl>
           )}
         </div>
@@ -304,10 +308,18 @@ function StatusPill({ status }: { status: string }) {
 const CREW_COMMITTED_HINT =
   "A crew has committed to this drop — contact them directly to cancel.";
 
+/**
+ * Crew contact rows only ever appear inside the dark green in-flight card, so
+ * they're styled for that ground rather than taking a tone prop for a light
+ * variant that doesn't exist. Pale green rather than white for the links: the
+ * phone number is the thing to tap, and it needs to separate from the labels.
+ */
+const CREW_LINK = "text-[#cfe8a8] underline-offset-2 hover:underline";
+
 function CrewRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap justify-between gap-3">
-      <dt className="text-muted">{label}</dt>
+      <dt className="text-white/70">{label}</dt>
       <dd className="text-right font-medium">{children}</dd>
     </div>
   );

@@ -177,17 +177,21 @@ async function SupplierPanel({ approved, userId }: { approved: boolean; userId: 
         </section>
       )}
 
-      <div className="card mt-6">
-        <h2 className="font-semibold">
-          {openDrops.length > 0 ? "Room for another?" : "Got a full truck?"}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Open the map to see who wants chip near your current job.
-        </p>
-        <Link href="/map" className="btn-primary mt-5">
-          Find a drop nearby
-        </Link>
-      </div>
+      {/* Only when there's nothing else on the page. The same button now sits in
+          the header on every screen, so repeating it under a list of live drops
+          is two identical green buttons a few centimetres apart — but a driver
+          with no claims needs the page to point somewhere. */}
+      {openDrops.length === 0 && (
+        <div className="card mt-6">
+          <h2 className="font-semibold">Got a full truck?</h2>
+          <p className="mt-1 text-sm text-muted">
+            Open the map to see who wants chip near your current job.
+          </p>
+          <Link href="/map" className="btn-primary mt-5">
+            Find a drop nearby
+          </Link>
+        </div>
+      )}
     </>
   );
 }
