@@ -62,9 +62,14 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
         <div className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">
           {done ? "Delivered" : waiting ? "Waiting on the gardener" : live ? "Claimed — go now" : CLOSED_LABEL[drop.status] ?? "Closed"}
         </div>
-        <h1 className="mt-1 text-2xl font-semibold">
-          {isSupplier ? `${listing.suburb} ${listing.state}` : "Your mulch delivery"}
-        </h1>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-semibold">
+            {isSupplier ? `${listing.suburb} ${listing.state}` : "Your mulch delivery"}
+          </h1>
+          {/* Beside the title, not buried under the delivery form — a driver
+              releasing a claim is usually doing it in a hurry. */}
+          {isSupplier && (live || waiting) && <CancelClaim dropId={drop.id} compact />}
+        </div>
 
         {/* Contact details, released because the drop is accepted. Dark green
             so the address reads as the one thing on this screen that matters,
@@ -175,7 +180,6 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
                 ? `We've emailed them. You'll get the address the moment they say yes, and this lapses on its own if they don't answer by ${drop.expiresAt.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}.`
                 : "Check your email for the request — you can say yes or no from there."}
             </p>
-            {isSupplier && <CancelClaim dropId={drop.id} />}
           </div>
         ) : isSupplier ? (
           <div className="mt-8 border-t border-border pt-8">
@@ -185,7 +189,6 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
               both of you a record of what actually arrived.
             </p>
             <CompleteDropForm dropId={drop.id} />
-            <CancelClaim dropId={drop.id} />
           </div>
         ) : (
           <p className="mt-8 border-t border-border pt-8 text-sm text-muted">

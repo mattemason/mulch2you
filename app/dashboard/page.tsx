@@ -89,9 +89,7 @@ async function ReceiverPanel({ userId }: { userId: string }) {
                   <Pill tone="accent">A crew is on the way</Pill>
                 )}
                 {(byListing.get(l.id)?.delivered ?? 0) > 0 && (
-                  <Pill tone="muted">
-                    {byListing.get(l.id)!.delivered} delivered
-                  </Pill>
+                  <Pill tone="muted">{byListing.get(l.id)!.delivered} delivered</Pill>
                 )}
               </div>
             </div>
@@ -194,6 +192,11 @@ async function SupplierPanel({ approved, userId }: { approved: boolean; userId: 
   );
 }
 
+/**
+ * Filled rather than outlined. Four pale outlines in a row read as decoration;
+ * the whole point is that "a crew is on the way" should catch the eye from
+ * across the list.
+ */
 function Pill({
   children,
   tone,
@@ -202,12 +205,14 @@ function Pill({
   tone: "brand" | "muted" | "accent";
 }) {
   const cls = {
-    brand: "border-brand text-brand",
-    muted: "border-border text-muted",
-    accent: "border-accent text-accent",
+    brand: "bg-brand text-brand-fg",
+    muted: "bg-foreground/10 text-muted",
+    accent: "bg-[#E8631A] text-white",
   }[tone];
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}>
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${cls}`}
+    >
       {children}
     </span>
   );

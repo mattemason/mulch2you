@@ -16,6 +16,8 @@ import {
 } from "@/lib/listing-options";
 import { deleteListing, setListingStatus } from "../actions";
 import { ListingPhotoForm } from "./photo-form";
+import { formatAuMobile } from "@/lib/phone";
+import { displayUrl } from "@/lib/url";
 import { Photo } from "@/app/photo";
 
 export default async function ListingPage({ params }: PageProps<"/listings/[id]">) {
@@ -45,7 +47,16 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
   // live; it doesn't say a truck is already coming, which is the thing an
   // owner actually wants to know when they open this page.
   const [inFlight] = await db
-    .select({ status: drops.status, businessName: supplierProfiles.businessName, crewName: users.name })
+    .select({
+      id: drops.id,
+      status: drops.status,
+      businessName: supplierProfiles.businessName,
+      website: supplierProfiles.website,
+      contactEmail: supplierProfiles.contactEmail,
+      crewName: users.name,
+      crewPhone: users.phone,
+      crewEmail: users.email,
+    })
     .from(drops)
     .innerJoin(users, eq(users.id, drops.supplierId))
     .leftJoin(supplierProfiles, eq(supplierProfiles.userId, drops.supplierId))
@@ -74,26 +85,52 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <StatusPill status={listing.status} />
-            <form
-              action={async () => {
-                "use server";
-                await setListingStatus(id, listing.status === "active" ? "paused" : "active");
-              }}
-            >
-              <button type="submit" className="btn-secondary py-2 text-sm">
-                {listing.status === "active" ? "Pause" : "Reactivate"}
-              </button>
-            </form>
-            <form
-              action={async () => {
-                "use server";
-                await deleteListing(id);
-              }}
-            >
-              <button type="submit" className="btn-secondary py-2 text-sm text-accent">
-                Delete
-              </button>
-            </form>
+            {/* Once a crew has committed, pausing or deleting the pin would
+                leave them driving to a job that quietly vanished. The way out
+                of that is a phone call, not a button. */}
+            {inFlight ? (
+              <>
+                <button
+                  type="button"
+                  disabled
+                  title={CREW_COMMITTED_HINT}
+                  className="btn-secondary cursor-not-allowed py-2 text-sm opacity-45"
+                >
+                  Pause
+                </button>
+                <button
+                  type="button"
+                  disabled
+                  title={CREW_COMMITTED_HINT}
+                  className="btn-secondary cursor-not-allowed py-2 text-sm opacity-45"
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <form
+                  action={async () => {
+                    "use server";
+                    await setListingStatus(id, listing.status === "active" ? "paused" : "active");
+                  }}
+                >
+                  <button type="submit" className="btn-secondary py-2 text-sm">
+                    {listing.status === "active" ? "Pause" : "Reactivate"}
+                  </button>
+                </form>
+                <form
+                  action={async () => {
+                    "use server";
+                    await deleteListing(id);
+                  }}
+                >
+                  <button type="submit" className="btn-secondary py-2 text-sm text-accent">
+                    Delete
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
 
@@ -117,8 +154,47 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
                   ? deliveries.length > 0
                     ? `${deliveries.length} load${deliveries.length === 1 ? "" : "s"} delivered here so far.`
                     : "Waiting for a crew with a full truck nearby."
-                  : "Reactivate it below when you want mulch again."}
+                  : "Reactivate it when you want mulch again."}
           </div>
+
+          {inFlight && (
+            <dl className="mt-4 space-y-1.5 border-t border-border pt-4 text-sm">
+              {inFlight.businessName && (
+                <CrewRow label="Business">{inFlight.businessName}</CrewRow>
+              )}
+              {inFlight.crewName && <CrewRow label="Contact">{inFlight.crewName}</CrewRow>}
+              {inFlight.crewPhone && (
+                <CrewRow label="Phone">
+                  <a href={`tel:${inFlight.crewPhone}`} className="text-brand hover:underline">
+                    {formatAuMobile(inFlight.crewPhone)}
+                  </a>
+                </CrewRow>
+              )}
+              {(inFlight.contactEmail ?? inFlight.crewEmail) && (
+                <CrewRow label="Email">
+                  <a
+                    href={`mailto:${inFlight.contactEmail ?? inFlight.crewEmail}`}
+                    className="text-brand hover:underline"
+                  >
+                    {inFlight.contactEmail ?? inFlight.crewEmail}
+                  </a>
+                </CrewRow>
+              )}
+              {inFlight.website && (
+                <CrewRow label="Website">
+                  <a
+                    href={inFlight.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-brand hover:underline"
+                  >
+                    {displayUrl(inFlight.website)}
+                  </a>
+                </CrewRow>
+              )}
+              <p className="pt-1 text-xs text-muted">{CREW_COMMITTED_HINT}</p>
+            </dl>
+          )}
         </div>
 
         <dl className="mt-8 space-y-4">
@@ -222,5 +298,17 @@ function StatusPill({ status }: { status: string }) {
     <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${tone}`}>
       {status}
     </span>
+  );
+}
+
+const CREW_COMMITTED_HINT =
+  "A crew has committed to this drop — contact them directly to cancel.";
+
+function CrewRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap justify-between gap-3">
+      <dt className="text-muted">{label}</dt>
+      <dd className="text-right font-medium">{children}</dd>
+    </div>
   );
 }

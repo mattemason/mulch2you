@@ -12,7 +12,7 @@ import { cancelDrop, type CancelState } from "../actions";
  * optional — a driver in a hurry shouldn't be blocked by a form field — but
  * it's the only way patterns like "gate too narrow" ever become visible.
  */
-export function CancelClaim({ dropId }: { dropId: string }) {
+export function CancelClaim({ dropId, compact = false }: { dropId: string; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [state, action] = useActionState<CancelState, FormData>(
     cancelDrop.bind(null, dropId),
@@ -21,7 +21,7 @@ export function CancelClaim({ dropId }: { dropId: string }) {
 
   if (state.ok) {
     return (
-      <div className="card mt-6">
+      <div className="card mt-4 w-full">
         <h2 className="font-semibold">Claim released</h2>
         <p className="mt-1 text-sm text-muted">
           The pin is back on the map for other crews, and we&apos;ve let the
@@ -36,15 +36,19 @@ export function CancelClaim({ dropId }: { dropId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-6 text-sm text-muted underline underline-offset-4 hover:text-foreground"
+        className={
+          compact
+            ? "btn-secondary shrink-0 py-2 text-sm text-accent"
+            : "mt-6 text-sm text-muted underline underline-offset-4 hover:text-foreground"
+        }
       >
-        Can&apos;t make this one? Release the claim
+        {compact ? "Cancel this drop" : "Can't make this one? Release the claim"}
       </button>
     );
   }
 
   return (
-    <form action={action} className="card mt-6">
+    <form action={action} className="card mt-4 w-full">
       <h2 className="font-semibold">Release this claim?</h2>
       <p className="mt-1 text-sm text-muted">
         The pin goes back on the map and the gardener is told no truck is
