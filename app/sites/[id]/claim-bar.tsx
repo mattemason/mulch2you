@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { claimListing } from "@/app/drops/actions";
 import { Icon } from "@/app/map/icons";
+import "@/app/supplier-ui.css";
 
 /**
  * The sticky claim bar and its confirmation.
