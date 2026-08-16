@@ -140,13 +140,16 @@
   align-items: center;
   gap: 4px;
 }
+/* Green reads as "go" and orange as "hold on", so instant-claim pins are
+   green and the ones needing a reply are orange. It was the other way round,
+   which had the least available pin as the most eye-catching thing on screen. */
 .m2y .badge--now {
-  background: var(--now-wash);
-  color: #b8480e;
+  background: var(--green-wash);
+  color: var(--green-dark);
 }
 .m2y .badge--approve {
-  background: #eef1f6;
-  color: #465a78;
+  background: var(--now-wash);
+  color: #b8480e;
 }
 .m2y .badge--size {
   background: var(--sand);
@@ -159,7 +162,10 @@
 .m2y-app {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  /* Fills whatever's left under the app header rather than the whole viewport,
+     which would push the header off-screen by exactly its own height. */
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
@@ -272,12 +278,8 @@
   border-color: var(--green);
   color: #fff;
 }
-.m2y .fchip--now[aria-pressed="true"] {
-  background: var(--now);
-  border-color: var(--now);
-}
 .m2y .fchip .bolt {
-  color: var(--now);
+  color: var(--green);
   display: flex;
 }
 .m2y .fchip[aria-pressed="true"] .bolt {
@@ -320,7 +322,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--now);
+  color: var(--green);
   font-weight: 700;
 }
 
@@ -658,7 +660,7 @@
     flex-direction: column;
     background: #fff;
     border-right: 1px solid var(--line);
-    height: 100dvh;
+    min-height: 0;
     z-index: 1200;
   }
   .m2y .seg {

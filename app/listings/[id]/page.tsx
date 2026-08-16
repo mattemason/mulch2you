@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { listings } from "@/lib/db/schema";
+import { AppHeader } from "@/app/app-header";
 import { getCurrentUser } from "@/lib/session";
 import {
   DROP_SPOTS,
@@ -35,13 +35,7 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
 
   return (
     <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center px-6 py-4">
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
-            ← Dashboard
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <div className="flex items-start justify-between gap-4">

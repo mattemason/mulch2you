@@ -34,9 +34,12 @@ const LOCATE_TIMEOUT_MS = 9000;
  */
 setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 
-/** Inline so markers never depend on the CSS build having emitted a utility. */
-const PIN_NOW = "#E8631A";
-const PIN_OPEN = "#2E7D22";
+/**
+ * Inline so markers never depend on the CSS build having emitted a utility.
+ * Green means claim it and go; orange means you'll have to wait for a reply.
+ */
+const PIN_NOW = "#2E7D22";
+const PIN_OPEN = "#E8631A";
 /** Held by another crew — visible, but plainly not on offer. */
 const PIN_PENDING = "#9AA491";
 
@@ -296,7 +299,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
         <div className="filters">
           <div className="filter-row">
             <button
-              className="fchip fchip--now"
+              className="fchip"
               aria-pressed={filters.now}
               onClick={() => applyFilters({ ...filters, now: !filters.now })}
             >

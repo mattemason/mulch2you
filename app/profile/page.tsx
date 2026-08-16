@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AppHeader } from "@/app/app-header";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
 import { getReceiverStats, getSupplierStats } from "@/lib/db/stats";
 import { formatAuMobile } from "@/lib/phone";
-import { Wordmark } from "@/app/logo";
 import { ProfileForm } from "./form";
 
 /**
@@ -25,14 +24,7 @@ export default async function ProfilePage() {
 
   return (
     <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Wordmark className="h-6" />
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
-            Dashboard
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <h1 className="text-2xl font-semibold">

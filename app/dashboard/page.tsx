@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import { signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { drops, listings } from "@/lib/db/schema";
-import { getCurrentUser, isAdmin, isApprovedSupplier } from "@/lib/session";
-import { Wordmark } from "@/app/logo";
+import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
+import { AppHeader } from "@/app/app-header";
 import { MATERIALS_WANTED, VOLUME_TIERS } from "@/lib/listing-options";
 
 export default async function DashboardPage() {
@@ -15,26 +14,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Wordmark className="h-7" priority />
-          <div className="flex items-center gap-4">
-          <Link href="/profile" className="text-sm text-muted hover:text-foreground">
-            Profile
-          </Link>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
-          >
-            <button type="submit" className="text-sm text-muted hover:text-foreground">
-              Sign out
-            </button>
-          </form>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-2xl font-semibold">
@@ -47,14 +27,6 @@ export default async function DashboardPage() {
           <ReceiverPanel userId={user.id} />
         )}
 
-        {isAdmin(user) && (
-          <Link
-            href="/admin"
-            className="mt-8 inline-block text-sm text-brand hover:underline"
-          >
-            Admin — approve tree services
-          </Link>
-        )}
       </div>
     </main>
   );

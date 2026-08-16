@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { drops, listings, users } from "@/lib/db/schema";
+import { AppHeader } from "@/app/app-header";
 import { getCurrentUser } from "@/lib/session";
 import { formatAuMobile } from "@/lib/phone";
 import {
@@ -47,16 +48,7 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
 
   return (
     <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center px-6 py-4">
-          <Link
-            href={isSupplier ? "/map" : "/dashboard"}
-            className="text-sm text-muted hover:text-foreground"
-          >
-            ← {isSupplier ? "Map" : "Dashboard"}
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <div className="text-xs font-medium uppercase tracking-wide text-muted">

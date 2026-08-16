@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AppHeader } from "@/app/app-header";
 import { getCurrentUser } from "@/lib/session";
 import { geocoderName } from "@/lib/geocode";
 import { NewListingForm } from "./form";
@@ -12,13 +12,7 @@ export default async function NewListingPage() {
 
   return (
     <main className="flex-1">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
-            ← Dashboard
-          </Link>
-        </div>
-      </header>
+      <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <NewListingForm geocoder={geocoderName()} />
