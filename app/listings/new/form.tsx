@@ -7,9 +7,7 @@ import { AddressStep, type ConfirmedAddress } from "./address-step";
 import { PhotoField } from "@/app/photo-field";
 import {
   DROP_SPOTS,
-  EXCLUSIONS,
   DROP_SPOT_KEYS,
-  EXCLUSION_LABELS,
   MATERIALS_WANTED,
   MATERIAL_WANTED_KEYS,
   VOLUME_TIERS,
@@ -127,32 +125,12 @@ function DetailsStep({ address, onBack }: { address: ConfirmedAddress; onBack: (
         </p>
       </fieldset>
 
-      {/* Exclusions -------------------------------------------------------- */}
-      <fieldset className="mt-8">
-        <legend className="label">Anything you won&apos;t accept?</legend>
-        <p className="mb-3 text-xs text-muted">
-          Optional. Fewer restrictions means more drivers can help you.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {EXCLUSIONS.map((key) => (
-            <label
-              key={key}
-              className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border bg-card p-3"
-            >
-              <input
-                type="checkbox"
-                name="excludes"
-                value={key}
-                className="mt-0.5 size-4 accent-[var(--brand)]"
-              />
-              <span>
-                <span className="block text-sm font-medium">{EXCLUSION_LABELS[key].label}</span>
-                <span className="block text-xs text-muted">{EXCLUSION_LABELS[key].why}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {/* Species exclusions used to be asked here. Removed as a step: it made
+          the form longer at exactly the point people abandon it, and every
+          restriction shrinks the pool of drivers who can help. The column and
+          the display code stay, so existing listings keep their values and the
+          question can come back later — as an edit-time option rather than
+          something between a gardener and their first pin. */}
 
       {/* Access ------------------------------------------------------------ */}
       <fieldset className="mt-8">

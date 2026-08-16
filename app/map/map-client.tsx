@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   GeolocateControl,
+  LngLatBounds,
   Map as MapLibreMap,
   Marker,
   NavigationControl,
@@ -25,6 +26,10 @@ import { claimListing } from "@/app/drops/actions";
 const FALLBACK_CENTRE: Coords = { lat: -33.8688, lng: 151.2093 };
 const LOCATE_TIMEOUT_MS = 9000;
 
+/** Matches the palette in globals.css; inline so markers never depend on the CSS build. */
+const BRAND_GREEN = "#385020";
+const BRAND_AMBER = "#8a5a2a";
+
 type Filters = { radiusKm: number; fullTruckOnly: boolean; instantOnly: boolean };
 
 const DEFAULT_FILTERS: Filters = { radiusKm: 25, fullTruckOnly: false, instantOnly: false };
@@ -41,8 +46,23 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [listings, setListings] = useState<NearbyListing[]>([]);
   const [selected, setSelected] = useState<NearbyListing | null>(null);
+  const selectedRef = useRef<NearbyListing | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  /**
+   * The map is the nicer view but the more fragile one — it needs WebGL, a
+   * reachable tile CDN, and a container that has settled. A driver standing in
+   * a yard needs the addresses either way, so the list is a peer rather than a
+   * consolation prize, and a broken map falls back to it automatically.
+   */
+  const [view, setView] = useState<"map" | "list">("map");
+  const showList = view === "list" || mapError !== null;
+
+  // Mirrored into a ref so the marker effect can check it without listing
+  // `selected` as a dependency, which would rebuild every marker on each tap.
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
 
   const locating = centre === null;
   const effectiveCentre = centre ?? FALLBACK_CENTRE;
@@ -183,12 +203,27 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       const el = document.createElement("button");
       el.type = "button";
       el.setAttribute("aria-label", `${VOLUME_TIERS[l.tier].label} in ${l.suburb}`);
-      el.className = [
-        "grid size-8 place-items-center rounded-full border-2 border-white text-sm",
-        "font-bold text-white shadow-lg cursor-pointer",
-        l.preAuthorised ? "bg-[#2f7a3f]" : "bg-[#b4791f]",
-      ].join(" ");
+
+      // Inline styles, not Tailwind classes. This element is built imperatively
+      // outside React's render, so utility classes would only work if the CSS
+      // build happened to emit them — and an unemitted background leaves white
+      // text on a pale map, which is a pin you cannot see.
+      Object.assign(el.style, {
+        display: "grid",
+        placeItems: "center",
+        width: "34px",
+        height: "34px",
+        borderRadius: "999px",
+        border: "2px solid #fff",
+        background: l.preAuthorised ? BRAND_GREEN : BRAND_AMBER,
+        color: "#fff",
+        font: "700 15px/1 system-ui, sans-serif",
+        boxShadow: "0 2px 8px rgba(0,0,0,.35)",
+        cursor: "pointer",
+        padding: "0",
+      } satisfies Partial<CSSStyleDeclaration>);
       el.textContent = l.preAuthorised ? "⚡" : "?";
+
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         setSelected(l);
@@ -199,6 +234,15 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
     });
 
     markersRef.current = markers;
+
+    // Frame everything found, so pins are never just off-screen. Skipped once
+    // the driver has picked one, or panning would fight them.
+    if (listings.length > 0 && !selectedRef.current) {
+      const bounds = new LngLatBounds();
+      listings.forEach((l) => bounds.extend([l.approxLng, l.approxLat]));
+      map.fitBounds(bounds, { padding: 90, maxZoom: 13, duration: 0 });
+    }
+
     return () => markers.forEach((m) => m.remove());
   }, [listings]);
 
@@ -207,12 +251,48 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
     <div className="relative flex-1 min-h-[60vh]">
       <div ref={containerRef} className="absolute inset-0" />
 
+      {showList && (
+        <div className="absolute inset-0 overflow-y-auto bg-background px-3 pb-3 pt-[124px]">
+          <ul className="mx-auto max-w-2xl space-y-2">
+            {listings.map((l) => (
+              <li key={l.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(l)}
+                  className="card w-full text-left transition-colors hover:border-brand"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium">
+                      {l.preAuthorised && "⚡ "}
+                      {l.suburb} {l.state}
+                    </span>
+                    <span className="shrink-0 text-sm text-muted">
+                      {formatDistance(l.distanceKm)}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-muted">
+                    {MATERIALS_WANTED[l.wanted].label} · {VOLUME_TIERS[l.tier].label}
+                  </div>
+                </button>
+              </li>
+            ))}
+            {listings.length === 0 && !locating && (
+              <li className="card text-center text-sm text-muted">
+                Nothing within {filters.radiusKm} km. Try a wider radius.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
       <FilterBar
         filters={filters}
         onChange={applyFilters}
         count={listings.length}
         locating={locating}
         error={error ?? mapError}
+        view={view}
+        onViewChange={setView}
       />
 
       {selected && <PinSheet listing={selected} onClose={() => setSelected(null)} />}
@@ -228,12 +308,16 @@ function FilterBar({
   count,
   locating,
   error,
+  view,
+  onViewChange,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
   count: number;
   locating: boolean;
   error: string | null;
+  view: "map" | "list";
+  onViewChange: (v: "map" | "list") => void;
 }) {
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 p-3">
@@ -251,6 +335,21 @@ function FilterBar({
           >
             Full truck
           </Toggle>
+          <div className="ml-auto flex overflow-hidden rounded-lg border border-border">
+            {(["map", "list"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => onViewChange(v)}
+                aria-pressed={view === v}
+                className={`px-3 py-2 text-sm font-medium capitalize ${
+                  view === v ? "bg-brand text-brand-fg" : "bg-card"
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
           <select
             value={filters.radiusKm}
             onChange={(e) => onChange({ ...filters, radiusKm: Number(e.target.value) })}
