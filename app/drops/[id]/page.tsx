@@ -52,7 +52,14 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
       <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted">
+        <Link
+          href={isSupplier ? "/dashboard" : `/listings/${listing.id}`}
+          className="text-sm text-muted hover:text-foreground"
+        >
+          ← {isSupplier ? "Back to my drops" : "Back to the listing"}
+        </Link>
+
+        <div className="mt-4 text-xs font-medium uppercase tracking-wide text-muted">
           {done ? "Delivered" : waiting ? "Waiting on the gardener" : live ? "Claimed — go now" : CLOSED_LABEL[drop.status] ?? "Closed"}
         </div>
         <h1 className="mt-1 text-2xl font-semibold">

@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { drops, listings, supplierProfiles, users } from "@/lib/db/schema";
 import { AppHeader } from "@/app/app-header";
@@ -41,6 +42,17 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
     .where(and(eq(drops.listingId, id), eq(drops.status, "completed")))
     .orderBy(desc(drops.completedAt));
 
+  // Anything a crew is currently holding on this pin. "Active" says the pin is
+  // live; it doesn't say a truck is already coming, which is the thing an
+  // owner actually wants to know when they open this page.
+  const [inFlight] = await db
+    .select({ status: drops.status, businessName: supplierProfiles.businessName, crewName: users.name })
+    .from(drops)
+    .innerJoin(users, eq(users.id, drops.supplierId))
+    .leftJoin(supplierProfiles, eq(supplierProfiles.userId, drops.supplierId))
+    .where(and(eq(drops.listingId, id), inArray(drops.status, ["accepted", "offered"])))
+    .limit(1);
+
   const tier = VOLUME_TIERS[listing.tier];
   const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
   const daysLeft = daysUntilStale(listing.confirmedAt);
@@ -50,7 +62,11 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
       <AppHeader />
 
       <div className="mx-auto max-w-2xl px-6 py-10">
-        <div className="flex items-start justify-between gap-4">
+        <Link href="/dashboard" className="text-sm text-muted hover:text-foreground">
+          ← Back to my listings
+        </Link>
+
+        <div className="mt-4 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">
               {listing.suburb} {listing.state} {listing.postcode}
@@ -79,6 +95,30 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
                 Delete
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* What's happening right now, above the settings that never change. */}
+        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+          <div className="font-medium">
+            {inFlight?.status === "accepted"
+              ? `${inFlight.businessName ?? inFlight.crewName ?? "A crew"} is on the way`
+              : inFlight?.status === "offered"
+                ? `${inFlight.businessName ?? inFlight.crewName ?? "A crew"} has asked to drop here`
+                : listing.status === "active"
+                  ? "Live on the map"
+                  : "Paused — drivers can't see this pin"}
+          </div>
+          <div className="mt-1 text-sm text-muted">
+            {inFlight?.status === "accepted"
+              ? "They have your address. You'll see their photo here once it's tipped."
+              : inFlight?.status === "offered"
+                ? "Check your email to say yes or no. They don't have your address yet."
+                : listing.status === "active"
+                  ? deliveries.length > 0
+                    ? `${deliveries.length} load${deliveries.length === 1 ? "" : "s"} delivered here so far.`
+                    : "Waiting for a crew with a full truck nearby."
+                  : "Reactivate it below when you want mulch again."}
           </div>
         </div>
 
