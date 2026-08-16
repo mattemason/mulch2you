@@ -23,8 +23,8 @@ export async function AppHeader() {
   return (
     <header className="shrink-0 border-b border-border bg-background">
       <div className="mx-auto flex h-12 max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href="/dashboard" aria-label="Mulch2You dashboard" className="inline-flex">
-          <Wordmark className="h-5" href={null} />
+        <Link href="/dashboard" aria-label="Mulch2U dashboard" className="inline-flex">
+          <Wordmark size={20} href={null} />
         </Link>
 
         <nav className="flex items-center gap-4 text-sm">

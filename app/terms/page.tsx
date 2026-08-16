@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Wordmark } from "@/app/logo";
 
-export const metadata: Metadata = { title: "Terms — Mulch2You" };
+export const metadata: Metadata = { title: "Terms — Mulch2U" };
 
 /**
  * As with the privacy page: a factual statement of how the arrangement works,
@@ -15,7 +15,7 @@ export default function TermsPage() {
     <main className="flex-1">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Wordmark className="h-6" />
+          <Wordmark size={22} />
           <Link href="/" className="text-sm text-muted hover:text-foreground">
             Home
           </Link>
@@ -27,7 +27,7 @@ export default function TermsPage() {
         <p className="mt-3 text-muted">How this works, in plain English.</p>
 
         <div className="mt-8 space-y-8">
-          <Section title="What Mulch2You is">
+          <Section title="What Mulch2U is">
             <p>
               An introduction service. We connect gardeners who want woodchip
               with tree services that have some to tip. We don&apos;t own,

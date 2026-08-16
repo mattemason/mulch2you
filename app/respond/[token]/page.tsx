@@ -100,7 +100,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <main className="flex-1">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-lg items-center px-6 py-4">
-          <Wordmark className="h-6" />
+          <Wordmark size={22} />
         </div>
       </header>
       <div className="mx-auto max-w-lg px-6 py-10">{children}</div>

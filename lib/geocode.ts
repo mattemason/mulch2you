@@ -268,7 +268,7 @@ async function photonSuggest(query: string): Promise<AddressPrediction[]> {
   url.searchParams.set("lang", "en");
 
   const res = await fetch(url, {
-    headers: { "User-Agent": "Mulch2You/0.1 (+https://github.com/mattemason/mulch2you)" },
+    headers: { "User-Agent": "Mulch2U/0.1 (+https://github.com/mattemason/mulch2you)" },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Photon failed: ${res.status}`);
@@ -395,7 +395,7 @@ async function photonPlaces(query: string): Promise<PlaceSuggestion[]> {
   }
 
   const res = await fetch(url, {
-    headers: { "User-Agent": "Mulch2You/0.1 (+https://github.com/mattemason/mulch2you)" },
+    headers: { "User-Agent": "Mulch2U/0.1 (+https://github.com/mattemason/mulch2you)" },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`Photon failed: ${res.status}`);

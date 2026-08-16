@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { Wordmark } from "@/app/logo";
 import { useState } from "react";
 
 const NAV = [
@@ -25,9 +25,7 @@ export function SiteHeader({
     <>
       <header className="site-header">
         <div className="wrap">
-          <Link href="/" className="logo" aria-label="Mulch2You home">
-            <Image src="/wordmark.png" alt="Mulch2You" width={900} height={131} priority className="logo-img" />
-          </Link>
+          <Wordmark size={30} tone="ink" />
 
           <nav className="nav-links">
             {NAV.map((n) => (

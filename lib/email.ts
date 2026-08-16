@@ -38,10 +38,10 @@ export async function sendEmail({ to, subject, html, text }: SendArgs) {
 export async function sendMagicLinkEmail({ to, url }: { to: string; url: string }) {
   await sendEmail({
     to,
-    subject: "Your Mulch2You sign-in link",
-    text: `Sign in to Mulch2You: ${url}\n\nThis link expires in 30 minutes. If you didn't request it, ignore this email.`,
+    subject: "Your Mulch2U sign-in link",
+    text: `Sign in to Mulch2U: ${url}\n\nThis link expires in 30 minutes. If you didn't request it, ignore this email.`,
     html: layout(`
-      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">Sign in to Mulch2You</h1>
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">Sign in to Mulch2U</h1>
       <p style="margin:0 0 24px;color:#44544a;">Tap the button below. The link works once and expires in 30 minutes.</p>
       ${button(url, "Sign in")}
       <p style="margin:24px 0 0;font-size:13px;color:#7b8c82;">If you didn't request this, you can safely ignore it.</p>
@@ -61,7 +61,7 @@ export async function sendSupplierApprovedEmail({
   const greeting = name ? `G'day ${name.split(" ")[0]},` : "G'day,";
   await sendEmail({
     to,
-    subject: "You're approved on Mulch2You",
+    subject: "You're approved on Mulch2U",
     text: `${greeting}\n\nYou're approved. Open the map when you've got a full truck and you'll see who wants chip nearby: ${mapUrl}\n\nPins marked with a lightning bolt can be claimed on the spot — tap once and you get the address.`,
     html: layout(`
       <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">You're approved</h1>
@@ -79,20 +79,19 @@ function button(url: string, label: string) {
 }
 
 function layout(inner: string) {
-  // Mail clients block remote images by default, so the logo is decoration
-  // only — every email still reads correctly with images off, and the alt text
-  // carries the brand. Needs an absolute URL; skipped entirely without one.
-  const base = env.AUTH_URL?.replace(/\/$/, "");
-  const header = base
-    ? `<img src="${base}/wordmark.png" alt="Mulch2You" width="180" style="display:block;margin:0 0 24px;width:180px;max-width:100%;height:auto;" />`
-    : `<p style="margin:0 0 24px;font-size:18px;font-weight:700;color:#202020;">Mulch<span style="color:#385020;">2</span>You</p>`;
+  // Set in type, not served as an image: mail clients block remote images by
+  // default, so a hosted wordmark is a broken box on most first opens. Web-safe
+  // stack only — Anton isn't available to a mail client.
+  const header =
+    `<p style="margin:0 0 24px;font:700 20px/1 -apple-system,Segoe UI,Roboto,sans-serif;` +
+    `letter-spacing:-.02em;color:#14170f;">MULCH<span style="color:#385020;">2</span>U</p>`;
 
   return `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7f4;font-family:-apple-system,Segoe UI,Roboto,sans-serif;">
     <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;">
       ${header}
       ${inner}
       <hr style="border:none;border-top:1px solid #e6e9e4;margin:32px 0 16px;" />
-      <p style="margin:0;font-size:12px;color:#9aa89f;">Mulch2You — we deliver, you benefit.</p>
+      <p style="margin:0;font-size:12px;color:#9aa89f;">Mulch2U — we deliver, you benefit.</p>
     </div>
   </body></html>`;
 }

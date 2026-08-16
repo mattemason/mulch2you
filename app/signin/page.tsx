@@ -48,7 +48,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
   return (
     <main className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
-        <Wordmark className="h-8" priority />
+        <Wordmark size={30} />
 
         <h1 className="mt-8 text-2xl font-semibold">Sign in</h1>
         <p className="mt-2 text-sm text-muted">

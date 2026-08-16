@@ -1,64 +1,55 @@
-import Image from "next/image";
 import Link from "next/link";
 
 /**
- * The wordmark lockup, cut from the master logo by scripts/build-brand-assets.mjs.
+ * The wordmark, set in type rather than served as artwork.
  *
- * Two files rather than one: the master is charcoal-on-white, which vanishes on
- * a dark background. The wordmark is flat colour so it can be recoloured
- * cleanly for dark mode — the truck can't, because its cab is white and would
- * dissolve, which is why the full lockup only ever appears on a light surface.
+ * The supplied logo has MULCH2YOU baked into its pixels, so after the rename it
+ * couldn't be used without the site showing two different names at once. Anton
+ * is already loaded for the marketing headings and is what the logo is set in,
+ * so this is a close stand-in: same uppercase, same skew, same green digit.
+ *
+ * Swap it back for <Image> once there's a MULCH2U file — the truck icons need
+ * no change, since they carry no text.
  */
 export function Wordmark({
-  className = "h-8",
+  size = 22,
   href = "/",
-  priority = false,
+  tone = "auto",
+  className = "",
 }: {
-  className?: string;
+  /** Cap height in pixels, roughly. */
+  size?: number;
   href?: string | null;
-  priority?: boolean;
+  /**
+   * "auto" follows the theme. The marketing page is light-only and the footer
+   * is dark, so both pin their own rather than inheriting a theme they don't use.
+   */
+  tone?: "auto" | "ink" | "light";
+  className?: string;
 }) {
-  const img = (
-    <>
-      <Image
-        src="/wordmark.png"
-        alt="Mulch2You — we deliver, you benefit"
-        width={900}
-        height={158}
-        priority={priority}
-        className={`${className} w-auto dark:hidden`}
-      />
-      <Image
-        src="/wordmark-dark.png"
-        alt=""
-        aria-hidden
-        width={900}
-        height={158}
-        priority={priority}
-        className={`${className} hidden w-auto dark:block`}
-      />
-    </>
+  const ink =
+    tone === "light" ? "text-white" : tone === "ink" ? "text-[#14170f]" : "text-foreground";
+  const accent =
+    tone === "light" ? "text-[#8fbf63]" : tone === "ink" ? "text-[#2e7d22]" : "text-brand";
+
+  const mark = (
+    <span
+      className={`inline-block select-none leading-none tracking-tight ${ink} ${className}`}
+      style={{
+        fontFamily: "var(--font-display), 'Arial Narrow', Impact, sans-serif",
+        fontSize: `${size}px`,
+        transform: "skewX(-6deg)",
+      }}
+    >
+      MULCH<span className={accent}>2</span>U
+    </span>
   );
 
-  if (!href) return <span className="inline-flex">{img}</span>;
+  if (!href) return mark;
 
   return (
-    <Link href={href} aria-label="Mulch2You home" className="inline-flex">
-      {img}
+    <Link href={href} aria-label="Mulch2U home" className="inline-flex">
+      {mark}
     </Link>
-  );
-}
-
-/** The full lockup, truck and all. Light surfaces only — see above. */
-export function FullLogo({ className = "" }: { className?: string }) {
-  return (
-    <Image
-      src="/logo.png"
-      alt="Mulch2You — a tipper truck unloading wood chip"
-      width={1200}
-      height={602}
-      priority
-      className={className}
-    />
   );
 }

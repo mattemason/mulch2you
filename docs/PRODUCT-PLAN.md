@@ -1,4 +1,4 @@
-# Mulch2You — Product & Technical Plan
+# Mulch2U — Product & Technical Plan
 
 _Draft v1 — a two-sided marketplace matching arborists with surplus wood chip to gardeners who want it._
 

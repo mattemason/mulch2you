@@ -11,7 +11,7 @@ const anton = Anton({ variable: "--font-display", subsets: ["latin"], weight: "4
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Mulch2You — we deliver, you benefit",
+  title: "Mulch2U — we deliver, you benefit",
   description:
     "Connects arborists with a full truck of wood chip to gardeners who want it. Free mulch for gardens, no tip fees for tree crews.",
 };

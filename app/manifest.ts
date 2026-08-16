@@ -9,8 +9,8 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Mulch2You",
-    short_name: "Mulch2You",
+    name: "Mulch2U",
+    short_name: "Mulch2U",
     description: "Free wood chip, straight from the truck. We deliver, you benefit.",
     start_url: "/dashboard",
     display: "standalone",

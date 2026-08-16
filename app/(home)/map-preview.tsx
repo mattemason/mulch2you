@@ -78,7 +78,7 @@ export function MapPreview({ supplierHref }: { supplierHref: string }) {
             Every driveway <span className="green">on one map.</span>
           </h2>
           <p className="lead">
-            This is what a tree crew sees when they open Mulch2You: drop sites near the
+            This is what a tree crew sees when they open Mulch2U: drop sites near the
             job, filtered to what their truck can actually service.
           </p>
         </div>

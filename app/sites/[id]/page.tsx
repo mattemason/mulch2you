@@ -85,7 +85,7 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
   const takenByOther = Boolean(heldBy) && heldBy.supplierId !== user.id;
 
   return (
-    <div className="m2y m2y-detail">
+    <div className="m2u m2u-detail">
       <header className="topbar">
         <div className="topbar-in">
           <Link href="/map" className="icon-btn" aria-label="Back to map">

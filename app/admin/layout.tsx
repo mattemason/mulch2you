@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
-            <Wordmark className="h-6" />
+            <Wordmark size={22} />
             <span className="rounded-full border border-border px-2 py-0.5 text-xs font-semibold text-muted">
               admin
             </span>

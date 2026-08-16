@@ -1,4 +1,4 @@
-# Mulch2You
+# Mulch2U
 
 Connects arborists with a full truck of wood chip to gardeners who want it —
 free mulch for the garden, no tip fees for the tree crew.

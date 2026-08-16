@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { Wordmark } from "@/app/logo";
 import { getCurrentUser, receiverHref, supplierHref } from "@/lib/session";
 import { SiteHeader } from "./site-header";
 import { HowItWorks } from "./how-it-works";
@@ -9,7 +9,7 @@ import { Faq } from "./faq";
 import "./marketing.css";
 
 export const metadata: Metadata = {
-  title: "Mulch2You — free mulch delivered, straight from the truck",
+  title: "Mulch2U — free mulch delivered, straight from the truck",
   description:
     "A free truckload of arborist woodchip on your driveway. Tree crews tip locally instead of queuing at the transfer station, and nobody pays a cent.",
 };
@@ -52,7 +52,7 @@ export default async function HomePage() {
             </h1>
             <p className="lead">
               Tree crews pay to dump woodchip. Gardeners pay a fortune to buy it back
-              in bags. Mulch2You puts them on the same map, so the load goes in your
+              in bags. Mulch2U puts them on the same map, so the load goes in your
               garden instead of a transfer station — free, both ways.
             </p>
           </div>
@@ -204,15 +204,7 @@ export default async function HomePage() {
         <div className="wrap">
           <div className="footer-grid">
             <div className="footer-brand">
-              <Link href="/" className="logo" aria-label="Mulch2You home">
-                <Image
-                  src="/wordmark-dark.png"
-                  alt="Mulch2You"
-                  width={900}
-                  height={131}
-                  className="logo-img"
-                />
-              </Link>
+              <Wordmark size={26} tone="light" />
               <p>
                 Matching tree crews who need to dump woodchip with gardeners who want it
                 delivered. One flat fee, paid after the drop.
@@ -245,7 +237,7 @@ export default async function HomePage() {
           </div>
 
           <div className="footer-bar">
-            <div>© {new Date().getFullYear()} Mulch2You.</div>
+            <div>© {new Date().getFullYear()} Mulch2U.</div>
             <div className="footer-bar-links">
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>

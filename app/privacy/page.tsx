@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Wordmark } from "@/app/logo";
 import { DEFAULT_FUZZ_METRES } from "@/lib/geo";
 
-export const metadata: Metadata = { title: "Privacy — Mulch2You" };
+export const metadata: Metadata = { title: "Privacy — Mulch2U" };
 
 /**
  * A factual description of what the software actually does with personal
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
     <main className="flex-1">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4">
-          <Wordmark className="h-6" />
+          <Wordmark size={22} />
           <Link href="/" className="text-sm text-muted hover:text-foreground">
             Home
           </Link>

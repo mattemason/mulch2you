@@ -254,7 +254,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const countLabel = `${count} ${count === 1 ? "site" : "sites"}`;
 
   return (
-    <div className={`m2y m2y-app${listMode ? " list-mode" : ""}`}>
+    <div className={`m2u m2u-app${listMode ? " list-mode" : ""}`}>
       <div className="panel">
         <header className="appbar">
           <Link href="/dashboard" className="icon-btn" aria-label="Back to dashboard">
