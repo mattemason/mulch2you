@@ -68,8 +68,8 @@ export const dropSpot = pgEnum("drop_spot", [
 // list with no database dependency, and keeping it out of here keeps drizzle
 // out of the client bundle.
 
-export const ETA_WINDOWS = ["within_2h", "today", "tomorrow", "this_week"] as const;
-export type EtaWindow = (typeof ETA_WINDOWS)[number];
+// ETA windows and their labels live in lib/listing-options.ts.
+export type EtaWindow = "within_2h" | "today" | "tomorrow" | "this_week";
 
 /* -------------------------------------------------------------------------- */
 /*  Auth.js tables                                                             */

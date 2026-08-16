@@ -87,30 +87,16 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
         </div>
       </header>
 
-      <div className="photo">
-        {listing.photoKey ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={`/api/photos/${listing.photoKey}`} alt="The drop spot at this site" />
-        ) : (
-          <div className="photo-empty">
-            <Icon.photo size={40} />
-            <p>No photo of the spot — ring ahead if you&apos;re unsure of access</p>
-          </div>
-        )}
-        <div className="photo-badges">
-          {listing.preAuthorised ? (
-            <span className="badge badge--now">
-              <Icon.bolt size={10} /> Drop now — no approval
-            </span>
-          ) : (
-            <span className="badge badge--approve">Needs approval first</span>
-          )}
-        </div>
-      </div>
-
       <div className="head">
         <div className="wrap">
           <div className="badges">
+            {listing.preAuthorised ? (
+              <span className="badge badge--now">
+                <Icon.bolt size={10} /> Drop now — no approval
+              </span>
+            ) : (
+              <span className="badge badge--approve">Needs approval first</span>
+            )}
             <span className="badge badge--size">
               {listing.tier === "unlimited" ? "Send everything" : tier.label}
             </span>
@@ -186,6 +172,21 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
                 ))}
                 <span className="chip-ok">Everything else is fine</span>
               </>
+            )}
+          </div>
+        </section>
+
+        <section className="panelcard">
+          <h2>The drop spot</h2>
+          <div className="photo">
+            {listing.photoKey ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={`/api/photos/${listing.photoKey}`} alt="The drop spot at this site" />
+            ) : (
+              <div className="photo-empty">
+                <Icon.photo size={40} />
+                <p>No photo — ring ahead if you&apos;re unsure of access</p>
+              </div>
             )}
           </div>
         </section>

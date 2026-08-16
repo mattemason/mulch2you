@@ -9,11 +9,10 @@ import type { NearbyListing } from "@/lib/db/queries";
 import { formatDistance, type Coords } from "@/lib/geo";
 import { listingRef } from "@/lib/refs";
 import {
-  DROP_SPOTS,
   EXCLUSION_LABELS,
   MATERIALS_WANTED,
   VOLUME_TIERS,
-  type DropSpotKey,
+  tipsPhrase,
   type Exclusion,
 } from "@/lib/listing-options";
 import { Icon } from "./icons";
@@ -480,7 +479,6 @@ function SiteCard({
   active: boolean;
   onSelect: () => void;
 }) {
-  const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
   return (
     <button className={`card${active ? " is-active" : ""}`} onClick={onSelect}>
       <div className="card-main">
@@ -489,8 +487,7 @@ function SiteCard({
           <Badges listing={listing} />
         </div>
         <div className="card-meta">
-          {formatDistance(listing.distanceKm)} away · tips on the{" "}
-          {(spot?.label ?? listing.dropSpot).toLowerCase()}
+          {formatDistance(listing.distanceKm)} away · {tipsPhrase(listing.dropSpot)}
         </div>
         <div className="card-facts">
           <span>
@@ -525,7 +522,6 @@ function Preview({
   origin: Coords;
   onClose: () => void;
 }) {
-  const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
   // Pass where we searched from, so the detail page shows the same distance
   // as the card that was tapped rather than recomputing from nothing.
   const href = `/sites/${listing.id}?lat=${origin.lat}&lng=${origin.lng}`;
@@ -549,8 +545,7 @@ function Preview({
           </h3>
           <Badges listing={listing} />
           <div className="preview-meta">
-            {formatDistance(listing.distanceKm)} away · tips on the{" "}
-            {(spot?.label ?? listing.dropSpot).toLowerCase()}
+            {formatDistance(listing.distanceKm)} away · {tipsPhrase(listing.dropSpot)}
           </div>
         </div>
       </div>

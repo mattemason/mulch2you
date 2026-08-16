@@ -1,14 +1,23 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { drops, listings } from "@/lib/db/schema";
+import { drops, listings, users } from "@/lib/db/schema";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { newKey, putObject } from "@/lib/storage";
-import { CLAIM_WINDOW_HOURS } from "@/lib/listing-options";
+import {
+  CLAIM_WINDOW_HOURS,
+  ETA_WINDOWS,
+  ETA_WINDOW_KEYS,
+  type EtaWindowKey,
+} from "@/lib/listing-options";
+import { sendDropOfferEmail } from "@/lib/email";
+import { env } from "@/lib/env";
 
 export type ClaimResult = { dropId?: string; error?: string };
 
@@ -116,4 +125,163 @@ export async function completeDrop(
   revalidatePath(`/drops/${dropId}`);
   revalidatePath("/dashboard");
   return {};
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Ask-first pins: offer → gardener responds                                  */
+/* -------------------------------------------------------------------------- */
+
+export type OfferState = { error?: string; dropId?: string };
+
+/**
+ * Requests a drop on a pin whose owner wants to approve first.
+ *
+ * Nothing is released here. The gardener gets an email with the load size and
+ * when the crew could come, and only their acceptance hands over an address —
+ * which is the whole point of the setting.
+ */
+export async function offerDrop(
+  listingId: string,
+  _prev: OfferState,
+  formData: FormData,
+): Promise<OfferState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+  if (!isApprovedSupplier(user)) return { error: "Your account isn't approved yet." };
+
+  const eta = String(formData.get("eta") ?? "");
+  if (!isEtaWindow(eta)) return { error: "Pick when you could get there." };
+
+  const volumeRaw = formData.get("volumeM3");
+  const volume = typeof volumeRaw === "string" && volumeRaw.trim() ? Number(volumeRaw) : null;
+  const species = formData.get("species");
+
+  const [row] = await db
+    .select({
+      listing: listings,
+      ownerEmail: users.email,
+      ownerName: users.name,
+    })
+    .from(listings)
+    .innerJoin(users, eq(users.id, listings.userId))
+    .where(eq(listings.id, listingId))
+    .limit(1);
+
+  if (!row || row.listing.status !== "active") {
+    return { error: "That pin is no longer available." };
+  }
+
+  // One live request per crew per pin, so a driver tapping twice doesn't send
+  // the gardener two emails about the same load.
+  const [existing] = await db
+    .select({ id: drops.id })
+    .from(drops)
+    .where(
+      and(
+        eq(drops.listingId, listingId),
+        eq(drops.supplierId, user.id),
+        eq(drops.status, "offered"),
+      ),
+    )
+    .limit(1);
+  if (existing) return { error: "You've already asked about this one — they haven't replied yet." };
+
+  // The token is the credential, so it's random rather than derived, stored
+  // rather than signed, and cleared the moment it's used.
+  const token = randomBytes(24).toString("base64url");
+  const expiresAt = new Date(Date.now() + ETA_WINDOWS[eta].expiryHours * 3600_000);
+
+  const [drop] = await db
+    .insert(drops)
+    .values({
+      listingId,
+      supplierId: user.id,
+      status: "offered",
+      etaWindow: eta,
+      volumeM3: volume !== null && Number.isFinite(volume) ? String(volume) : null,
+      species: typeof species === "string" && species.trim() ? species.trim().slice(0, 200) : null,
+      acceptToken: token,
+      expiresAt,
+    })
+    .returning({ id: drops.id });
+
+  if (row.ownerEmail) {
+    try {
+      await sendDropOfferEmail({
+        to: row.ownerEmail,
+        gardenerName: row.ownerName,
+        businessName: user.supplierProfile?.businessName ?? user.name ?? "A local tree service",
+        suburb: row.listing.suburb,
+        eta: ETA_WINDOWS[eta].label,
+        volume: volume !== null && Number.isFinite(volume) ? `about ${volume} m³` : null,
+        respondUrl: `${await siteUrl()}/respond/${token}`,
+        expiresAt,
+      });
+    } catch (err) {
+      // The request stands even if the mail provider is down — it'll show on
+      // their dashboard — but say so rather than implying they've been told.
+      console.error("offer email failed", err);
+      revalidatePath("/dashboard");
+      return { dropId: drop.id, error: "Request sent, but the email didn't go through." };
+    }
+  }
+
+  revalidatePath("/dashboard");
+  return { dropId: drop.id };
+}
+
+export type RespondState = { error?: string; ok?: "accepted" | "declined" };
+
+/**
+ * The gardener's answer, from a link in an email.
+ *
+ * Deliberately a POST-only action behind a page with buttons. Mail scanners
+ * follow links before the recipient does — the same behaviour that burns magic
+ * links — so a GET that accepted a drop would hand out addresses to a security
+ * appliance.
+ */
+export async function respondToOffer(
+  token: string,
+  answer: "accept" | "decline",
+): Promise<RespondState> {
+  const [row] = await db
+    .select({ drop: drops, listing: listings })
+    .from(drops)
+    .innerJoin(listings, eq(listings.id, drops.listingId))
+    .where(eq(drops.acceptToken, token))
+    .limit(1);
+
+  if (!row) return { error: "That link isn't valid any more." };
+  if (row.drop.status !== "offered") {
+    return { error: `This request was already ${row.drop.status}.` };
+  }
+  if (row.drop.expiresAt.getTime() < Date.now()) {
+    await db.update(drops).set({ status: "expired", acceptToken: null }).where(eq(drops.id, row.drop.id));
+    return { error: "This request expired — the crew will have moved on." };
+  }
+
+  await db
+    .update(drops)
+    .set({
+      status: answer === "accept" ? "accepted" : "declined",
+      respondedAt: new Date(),
+      // Single use: spend the token whichever way they answered.
+      acceptToken: null,
+    })
+    .where(eq(drops.id, row.drop.id));
+
+  revalidatePath("/dashboard");
+  return { ok: answer === "accept" ? "accepted" : "declined" };
+}
+
+function isEtaWindow(v: string): v is EtaWindowKey {
+  return (ETA_WINDOW_KEYS as string[]).includes(v);
+}
+
+async function siteUrl(): Promise<string> {
+  if (env.AUTH_URL) return env.AUTH_URL.replace(/\/$/, "");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
 }

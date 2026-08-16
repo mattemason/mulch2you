@@ -768,6 +768,11 @@
   display: grid;
   place-items: center;
   color: var(--green);
+  /* Sits inside a card now rather than spanning the viewport, so it needs its
+     own corners and a ceiling — a 16:10 hero pushed everything useful below
+     the fold on a phone. */
+  border-radius: 12px;
+  max-height: 320px;
 }
 .m2y .photo img {
   width: 100%;
@@ -1133,5 +1138,17 @@
 .m2y .place-empty {
   padding: 14px 4px;
   font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Field labels inside the modals. */
+.m2y .label-sm {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: -6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
 }

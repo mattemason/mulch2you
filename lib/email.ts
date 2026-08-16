@@ -96,3 +96,49 @@ function layout(inner: string) {
     </div>
   </body></html>`;
 }
+
+export async function sendDropOfferEmail({
+  to,
+  gardenerName,
+  businessName,
+  suburb,
+  eta,
+  volume,
+  respondUrl,
+  expiresAt,
+}: {
+  to: string;
+  gardenerName: string | null;
+  businessName: string;
+  suburb: string;
+  eta: string;
+  volume: string | null;
+  respondUrl: string;
+  expiresAt: Date;
+}) {
+  const greeting = gardenerName ? `G'day ${gardenerName.split(" ")[0]},` : "G'day,";
+  const load = volume ? `${volume} of wood chip` : "a load of wood chip";
+  const by = expiresAt.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
+
+  await sendEmail({
+    to,
+    subject: `${businessName} can drop mulch at your ${suburb} place`,
+    text:
+      `${greeting}\n\n${businessName} has ${load} and could get to your ${suburb} listing ${eta.toLowerCase()}.\n\n` +
+      `Say yes or no here: ${respondUrl}\n\n` +
+      `They'll only get your address if you say yes. If you don't answer by ${by}, the request lapses and they'll move on.`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">A crew wants to drop mulch</h1>
+      <p style="margin:0 0 8px;color:#44544a;">${greeting}</p>
+      <p style="margin:0 0 20px;color:#44544a;">
+        <strong>${businessName}</strong> has ${load} and could get to your
+        ${suburb} listing <strong>${eta.toLowerCase()}</strong>.
+      </p>
+      ${button(respondUrl, "Say yes or no")}
+      <p style="margin:24px 0 0;font-size:13px;color:#7b8c82;">
+        They only get your address if you say yes. No answer by ${by} and the
+        request lapses — the crew will have moved on.
+      </p>
+    `),
+  });
+}

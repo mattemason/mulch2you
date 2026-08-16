@@ -107,25 +107,65 @@ export const EXCLUSION_LABELS: Record<Exclusion, { label: string; why: string }>
   stump_grindings: { label: "No stump grindings", why: "Soil and grit mixed through" },
 };
 
+/**
+ * `phrase` completes the sentence "tips …", because a label can't. Gluing
+ * "on the" to a label produces "tips on the through a gate", so each option
+ * carries the wording that actually reads.
+ */
 export const DROP_SPOTS = {
   driveway: {
     label: "Driveway",
+    phrase: "on the driveway",
     hint: "Most common. Check the truck can raise its tray — watch for wires and branches.",
   },
   nature_strip: {
     label: "Nature strip / verge",
+    phrase: "on the nature strip",
     hint: "Easiest for the driver. Check your council allows it.",
   },
   behind_gate: {
     label: "Through a gate",
+    phrase: "through a gate",
     hint: "Measure the opening — a tipper needs about 3 m.",
   },
-  paddock: { label: "Paddock or open ground", hint: "Ideal. Note any soft ground after rain." },
-  other: { label: "Somewhere else", hint: "Describe it in the access notes below." },
+  paddock: {
+    label: "Paddock or open ground",
+    phrase: "in the paddock",
+    hint: "Ideal. Note any soft ground after rain.",
+  },
+  other: {
+    label: "Somewhere else",
+    phrase: "somewhere on the property",
+    hint: "Describe it in the access notes below.",
+  },
 } as const;
 
 export type DropSpotKey = keyof typeof DROP_SPOTS;
+
+/** "tips on the driveway" / "tips through a gate" — never "tips on the through a gate". */
+export function tipsPhrase(dropSpot: string): string {
+  const spot = DROP_SPOTS[dropSpot as DropSpotKey];
+  return spot ? `tips ${spot.phrase}` : `tips ${dropSpot.toLowerCase()}`;
+}
+
 export const DROP_SPOT_KEYS = Object.keys(DROP_SPOTS) as DropSpotKey[];
+
+/**
+ * When a driver says they'd arrive, and how long the gardener gets to answer.
+ *
+ * The window scales with the promise: someone with a full truck right now
+ * can't sit on an unanswered request all day, while "sometime this week" can
+ * wait. An expired offer frees the pin rather than leaving it in limbo.
+ */
+export const ETA_WINDOWS = {
+  within_2h: { label: "Within 2 hours", expiryHours: 2 },
+  today: { label: "Later today", expiryHours: 6 },
+  tomorrow: { label: "Tomorrow", expiryHours: 24 },
+  this_week: { label: "Sometime this week", expiryHours: 72 },
+} as const;
+
+export type EtaWindowKey = keyof typeof ETA_WINDOWS;
+export const ETA_WINDOW_KEYS = Object.keys(ETA_WINDOWS) as EtaWindowKey[];
 
 /**
  * How long a claim holds a site. Six hours is a working day's worth of
@@ -141,6 +181,11 @@ export const CLAIM_WINDOW_HOURS = 6;
  * make drivers stop opening the app — three dead calls and they're gone.
  */
 export const STALE_AFTER_DAYS = 30;
+
+/** True once an offer's window has closed. Kept out of component bodies. */
+export function hasExpired(at: Date): boolean {
+  return at.getTime() < Date.now();
+}
 
 export function daysUntilStale(confirmedAt: Date): number {
   const elapsedDays = Math.floor((Date.now() - confirmedAt.getTime()) / 86_400_000);
