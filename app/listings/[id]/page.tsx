@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { listings } from "@/lib/db/schema";
+import { drops, listings, supplierProfiles, users } from "@/lib/db/schema";
 import { AppHeader } from "@/app/app-header";
 import { getCurrentUser } from "@/lib/session";
 import {
@@ -16,6 +16,7 @@ import {
 } from "@/lib/listing-options";
 import { deleteListing, setListingStatus } from "../actions";
 import { ListingPhotoForm } from "./photo-form";
+import { Photo } from "@/app/photo";
 
 export default async function ListingPage({ params }: PageProps<"/listings/[id]">) {
   const user = await getCurrentUser();
@@ -29,6 +30,16 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
     .limit(1);
 
   if (!listing) notFound();
+
+  // What's actually turned up here. The pin is only half the story once a
+  // crew has been — and the proof photo is the record if anything's disputed.
+  const deliveries = await db
+    .select({ drop: drops, businessName: supplierProfiles.businessName, crewName: users.name })
+    .from(drops)
+    .innerJoin(users, eq(users.id, drops.supplierId))
+    .leftJoin(supplierProfiles, eq(supplierProfiles.userId, drops.supplierId))
+    .where(and(eq(drops.listingId, id), eq(drops.status, "completed")))
+    .orderBy(desc(drops.completedAt));
 
   const tier = VOLUME_TIERS[listing.tier];
   const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
@@ -71,6 +82,41 @@ export default async function ListingPage({ params }: PageProps<"/listings/[id]"
               : "Drivers can just turn up"}
           </Row>
         </dl>
+
+        {deliveries.length > 0 && (
+          <section className="mt-10 border-t border-border pt-8">
+            <h2 className="font-semibold">
+              Delivered here ({deliveries.length})
+            </h2>
+            <ul className="mt-4 space-y-4">
+              {deliveries.map(({ drop, businessName, crewName }) => (
+                <li key={drop.id} className="card">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-medium">{businessName ?? crewName ?? "A tree service"}</span>
+                    <span className="text-sm text-muted">
+                      {drop.completedAt?.toLocaleDateString("en-AU", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-muted">
+                    {drop.volumeM3 ? `About ${drop.volumeM3} m³` : "Volume not recorded"}
+                    {drop.species && ` · ${drop.species}`}
+                  </div>
+                  {drop.proofPhotoKey && (
+                    <Photo
+                      src={`/api/photos/${drop.proofPhotoKey}`}
+                      alt="The load as it was tipped"
+                      className="mt-3 w-full rounded-xl border border-border"
+                    />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="mt-10 border-t border-border pt-8">
           <h2 className="font-semibold">Photo of the drop spot</h2>

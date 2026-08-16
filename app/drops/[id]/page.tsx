@@ -14,6 +14,7 @@ import {
 } from "@/lib/listing-options";
 import { CompleteDropForm } from "./complete-form";
 import { CancelClaim } from "./cancel-claim";
+import { Photo } from "@/app/photo";
 
 export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
   const user = await getCurrentUser();
@@ -110,8 +111,7 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
         {listing.photoKey && (
           <figure className="mt-6">
             <figcaption className="label">Where they want it</figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Photo
               src={`/api/photos/${listing.photoKey}`}
               alt="The spot the gardener wants the mulch tipped"
               className="w-full rounded-xl border border-border"
@@ -132,8 +132,7 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
               {drop.species && ` · ${drop.species}`}
             </p>
             {drop.proofPhotoKey && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Photo
                 src={`/api/photos/${drop.proofPhotoKey}`}
                 alt="The tipped load"
                 className="mt-4 w-full rounded-xl border border-border"

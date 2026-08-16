@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LngLatBounds, Map as MapLibreMap, Marker, setWorkerUrl } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "@/app/supplier-ui.css";
@@ -79,6 +80,9 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const [view, setView] = useState<"map" | "list">("map");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [canResearch, setCanResearch] = useState(false);
+  const router = useRouter();
+  /** Where a vertical swipe on the sheet handle began. */
+  const dragFrom = useRef<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   /**
    * What to call the search centre. Coordinates are meaningless to a driver,
@@ -386,9 +390,28 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
         </div>
 
         <section className={`sheet${sheetOpen ? " open" : ""}`} aria-label="Nearby drop sites">
-          <div className="sheet-grab">
+          <button
+            type="button"
+            className="sheet-grab"
+            aria-label={sheetOpen ? "Collapse the list" : "Expand the list"}
+            aria-expanded={sheetOpen}
+            onClick={() => setSheetOpen((o) => !o)}
+            // Tapping the handle is the reliable gesture, but people try to
+            // drag a handle that looks draggable, so swipes work too.
+            onTouchStart={(e) => {
+              dragFrom.current = e.touches[0].clientY;
+            }}
+            onTouchEnd={(e) => {
+              const from = dragFrom.current;
+              dragFrom.current = null;
+              if (from === null) return;
+              const travelled = from - e.changedTouches[0].clientY;
+              // Below the threshold it's a tap, which onClick already handled.
+              if (Math.abs(travelled) > 30) setSheetOpen(travelled > 0);
+            }}
+          >
             <i />
-          </div>
+          </button>
           <button className="sheet-head" onClick={() => setSheetOpen((o) => !o)}>
             <h2>{locating ? "Finding you…" : `${countLabel} within ${filters.radiusKm} km`}</h2>
             <span className="sort">Nearest first</span>
@@ -410,7 +433,17 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
                   listing={l}
                   active={l.id === selectedId}
                   onSelect={() => {
+                    // The preview card lives over the map, which is hidden in
+                    // list mode — so selecting there looked like nothing had
+                    // happened. Straight to the site page instead.
+                    if (listMode) {
+                      router.push(
+                        `/sites/${l.id}?lat=${effectiveCentre.lat}&lng=${effectiveCentre.lng}`,
+                      );
+                      return;
+                    }
                     setSelectedId(l.id);
+                    setSheetOpen(false);
                     mapRef.current?.flyTo({
                       center: [l.approxLng, l.approxLat],
                       zoom: 13,

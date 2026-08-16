@@ -521,10 +521,18 @@
   transform: translateY(0);
 }
 .m2y .sheet-grab {
-  padding: 9px 0 3px;
+  /* Generous target: it's a 4px bar, but the thing people aim at is the
+     whole strip, and it's tapped one-handed in a truck. */
+  padding: 12px 0 8px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
+  width: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.m2y .sheet-grab:active {
+  cursor: grabbing;
 }
 .m2y .sheet-grab i {
   display: block;

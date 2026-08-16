@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { saveListingPhoto, type PhotoState } from "../actions";
 import { PhotoField } from "@/app/photo-field";
+import { Photo } from "@/app/photo";
 
 export function ListingPhotoForm({
   listingId,
@@ -21,11 +22,11 @@ export function ListingPhotoForm({
     <form action={action} className="mt-3">
       {currentPhotoKey && (
         <div className="mb-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Photo
             src={`/api/photos/${currentPhotoKey}`}
             alt="The spot you've asked drivers to tip on"
             className="w-full rounded-xl border border-border"
+            missingLabel="The photo file is missing — upload it again below."
           />
         </div>
       )}
