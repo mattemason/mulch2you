@@ -152,11 +152,24 @@ cosmetic: phone cameras write GPS coordinates into EXIF by default, so an
 un-stripped drop-spot photo would hand suppliers the exact address of a house
 whose pin we deliberately fuzz to ~300 m.
 
-> **Railway: mount a volume.** Container filesystems are ephemeral. Add a volume
-> under service → Settings → Volumes, mount it at `/data`, and set
-> `UPLOAD_DIR=/data`. Without it every deploy deletes every uploaded photo.
-> Object storage (R2/S3) is the right move once volume grows — `lib/storage.ts`
-> is the only file that needs to change.
+### Railway: mount a volume before anyone uploads a photo
+
+Container filesystems are ephemeral, so without a volume every deploy deletes
+every uploaded photo. The database keeps the key and the file is gone, which
+surfaces as "the photo file is missing" on the listing page.
+
+1. Railway → your **app** service (not Postgres) → **Settings**
+2. Scroll to **Volumes** → **Add Volume**
+3. Mount path: `/data` — leave the name as offered
+4. **Variables** → set `UPLOAD_DIR=/data`
+5. Deploy
+
+Adding a volume restarts the service and pins it to one instance, which is
+fine at this size. Photos uploaded before the volume existed are gone; re-add
+them from each listing page.
+
+Object storage (R2/S3) is the right move once volume grows — `lib/storage.ts`
+is the only file that needs to change.
 
 ## Address lookup
 

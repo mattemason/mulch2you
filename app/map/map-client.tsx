@@ -407,7 +407,23 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
           </button>
           <button className="sheet-head" onClick={() => setSheetOpen((o) => !o)}>
             <h2>{locating ? "Finding you…" : `${countLabel} within ${filters.radiusKm} km`}</h2>
-            <span className="sort">Nearest first</span>
+            <span className="sort">
+              Nearest first
+              <svg
+                className="chev"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
           </button>
           <div className="sheet-list">
             {count === 0 && !locating ? (

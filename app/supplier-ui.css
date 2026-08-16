@@ -28,6 +28,9 @@
   --shadow-lg: 0 2px 6px rgba(20, 23, 15, 0.08), 0 26px 50px -20px rgba(20, 23, 15, 0.34);
 
   --header-h: 56px;
+  /* Roughly the filter row plus its count line. The sheet stops short of this
+     so its handle is never buried under the filters. */
+  --filters-h: 92px;
   --peek: 116px;
   --safe-b: env(safe-area-inset-bottom, 0px);
 
@@ -510,7 +513,11 @@
   background: #fff;
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -6px 30px -8px rgba(20, 23, 15, 0.26);
-  height: 78dvh;
+  /* Sized against the shell, not the viewport. 78dvh was 78% of the whole
+     screen inside a container already shortened by the site header, so an
+     opened sheet slid up under the filter bar — which has a higher z-index,
+     so it swallowed the grab handle and left no way to close it. */
+  height: calc(100% - var(--header-h) - var(--filters-h));
   transform: translateY(calc(100% - var(--peek) - var(--safe-b)));
   transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.3, 1);
   display: flex;
@@ -557,6 +564,14 @@
   font-size: 1.02rem;
   letter-spacing: -0.02em;
 }
+.m2y .sheet-head .chev {
+  transition: transform 0.2s ease;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+.m2y .sheet.open .sheet-head .chev {
+  transform: rotate(180deg);
+}
 .m2y .sheet-head .sort {
   font-size: 0.82rem;
   color: var(--muted);
@@ -568,7 +583,11 @@
 }
 .m2y .sheet-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  /* Keeps a flick at the end of the list from scrolling the page behind it. */
+  overscroll-behavior: contain;
   padding: 10px 12px 24px;
 }
 
