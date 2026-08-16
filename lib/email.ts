@@ -217,3 +217,50 @@ export async function sendDeliveryReminderEmail({
     `),
   });
 }
+
+export async function sendOfferAcceptedEmail({
+  to,
+  businessName,
+  addressLine,
+  suburb,
+  state,
+  postcode,
+  gardenerName,
+  gardenerPhone,
+  dropUrl,
+}: {
+  to: string;
+  businessName: string | null;
+  addressLine: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+  gardenerName: string | null;
+  gardenerPhone: string | null;
+  dropUrl: string;
+}) {
+  const full = `${addressLine}, ${suburb} ${state} ${postcode}`;
+  const who = gardenerName ?? "The gardener";
+  const crew = businessName ? `${businessName} — ` : "";
+
+  await sendEmail({
+    to,
+    subject: `${crew}yes from ${suburb}, you can drop that load`,
+    text:
+      `${who} said yes.\n\nDeliver to: ${full}\n` +
+      `${gardenerPhone ? `Phone: ${gardenerPhone}\n` : ""}` +
+      `\nOpen the drop for directions, and photograph the load once it's tipped to close the job: ${dropUrl}`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">${who} said yes</h1>
+      <p style="margin:0 0 6px;color:#7b8c82;font-size:13px;">Deliver to</p>
+      <p style="margin:0 0 16px;font-size:18px;font-weight:700;color:#1c1f1b;">${full}</p>
+      ${gardenerPhone ? `<p style="margin:0 0 20px;color:#44544a;">Phone: <strong>${gardenerPhone}</strong></p>` : ""}
+      <p style="margin:0 0 24px;color:#44544a;">
+        Photograph the load once it's tipped to close the job off. If you can't
+        make it after all, release the claim on the same page so another crew
+        can take it.
+      </p>
+      ${button(dropUrl, "Open the drop")}
+    `),
+  });
+}

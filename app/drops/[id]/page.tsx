@@ -36,7 +36,13 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
   if (!isSupplier && !isOwner) notFound();
 
   const { drop, listing, owner } = row;
+  // Branch on the actual status, not just "is it done". A released or lapsed
+  // claim is neither delivered nor live, and showing it the delivery form was
+  // how a cancelled drop kept looking like an active job.
   const done = drop.status === "completed";
+  const live = drop.status === "accepted";
+  const waiting = drop.status === "offered";
+  const closed = !done && !live && !waiting;
   const spot = DROP_SPOTS[listing.dropSpot as DropSpotKey];
 
   return (
@@ -54,7 +60,7 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <div className="text-xs font-medium uppercase tracking-wide text-muted">
-          {done ? "Delivered" : drop.status === "offered" ? "Waiting on the gardener" : drop.status === "cancelled" ? "Claim released" : "Claimed — go now"}
+          {done ? "Delivered" : waiting ? "Waiting on the gardener" : live ? "Claimed — go now" : CLOSED_LABEL[drop.status] ?? "Closed"}
         </div>
         <h1 className="mt-1 text-2xl font-semibold">
           {isSupplier ? `${listing.suburb} ${listing.state}` : "Your mulch delivery"}
@@ -142,6 +148,32 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
               />
             )}
           </div>
+        ) : closed ? (
+          <div className="mt-8 border-t border-border pt-8">
+            <h2 className="font-semibold">{CLOSED_LABEL[drop.status] ?? "Closed"}</h2>
+            <p className="mt-1 text-sm text-muted">
+              {CLOSED_BLURB[drop.status] ?? "Nothing more to do here."}
+              {drop.cancelledReason && ` Reason given: “${drop.cancelledReason}”.`}
+            </p>
+            <Link
+              href={isSupplier ? "/map" : "/dashboard"}
+              className="btn-secondary mt-5"
+            >
+              {isSupplier ? "Find another drop" : "Back to dashboard"}
+            </Link>
+          </div>
+        ) : waiting ? (
+          <div className="mt-8 border-t border-border pt-8">
+            <h2 className="font-semibold">
+              {isSupplier ? "Waiting on the gardener" : "You haven't answered yet"}
+            </h2>
+            <p className="mt-1 text-sm text-muted">
+              {isSupplier
+                ? `We've emailed them. You'll get the address the moment they say yes, and this lapses on its own if they don't answer by ${drop.expiresAt.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" })}.`
+                : "Check your email for the request — you can say yes or no from there."}
+            </p>
+            {isSupplier && <CancelClaim dropId={drop.id} />}
+          </div>
         ) : isSupplier ? (
           <div className="mt-8 border-t border-border pt-8">
             <h2 className="font-semibold">Once you&apos;ve tipped it</h2>
@@ -157,7 +189,23 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
             The driver will add a photo here once the load has been tipped.
           </p>
         )}
+
       </div>
     </main>
   );
 }
+
+/** Statuses that mean the job is over without a delivery. */
+const CLOSED_LABEL: Record<string, string> = {
+  cancelled: "Claim released",
+  declined: "The gardener said no",
+  expired: "Request lapsed",
+  no_show: "Marked as a no-show",
+};
+
+const CLOSED_BLURB: Record<string, string> = {
+  cancelled: "This pin went back on the map for other crews.",
+  declined: "They'd rather wait for a different load. No address was shared.",
+  expired: "Nobody answered in time, so the pin went back on the map.",
+  no_show: "No load was recorded against this claim.",
+};

@@ -18,6 +18,8 @@ export type NearbyListing = {
   accessNotes: string | null;
   photoKey: string | null;
   preAuthorised: boolean;
+  /** A crew already holds this one, so it can't be claimed again. */
+  pending: boolean;
   createdAt: Date;
   distanceKm: number;
 };
@@ -52,6 +54,15 @@ export async function findNearbyListings(
   const { radiusKm = 25, minCapacityM3, preAuthorisedOnly = false, limit = 200 } = opts;
   const box = boundingBox(origin, radiusKm);
 
+  // A pin someone already holds stays visible but unclaimable — vanishing pins
+  // make a driver wonder whether the app is broken, and "taken" is useful
+  // information when you're deciding where to run next.
+  const pending = sql<boolean>`exists (
+    select 1 from ${drops}
+    where ${drops.listingId} = ${listings.id}
+      and ${drops.status} in ('accepted', 'offered')
+  )`;
+
   const distance = sql<number>`
     6371 * acos(least(1,
         cos(radians(${origin.lat})) * cos(radians(${listings.approxLat}))
@@ -75,6 +86,7 @@ export async function findNearbyListings(
       accessNotes: listings.accessNotes,
       photoKey: listings.photoKey,
       preAuthorised: listings.preAuthorised,
+      pending: pending.as("pending"),
       createdAt: listings.createdAt,
       distanceKm: distance.as("distance_km"),
     })

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { drops, listings, users } from "@/lib/db/schema";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
@@ -72,7 +72,15 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
     ? haversineKm(from, { lat: listing.approxLat, lng: listing.approxLng })
     : null;
 
+  // Held by anyone at all — including a crew that isn't this one.
+  const [heldBy] = await db
+    .select({ supplierId: drops.supplierId })
+    .from(drops)
+    .where(and(eq(drops.listingId, id), inArray(drops.status, ["accepted", "offered"])))
+    .limit(1);
+
   const unavailable = listing.status !== "active";
+  const takenByOther = Boolean(heldBy) && heldBy.supplierId !== user.id;
 
   return (
     <div className="m2y m2y-detail">
@@ -234,7 +242,10 @@ export default async function SitePage({ params, searchParams }: PageProps<"/sit
       <ClaimBar
         listingId={listing.id}
         preAuthorised={listing.preAuthorised}
-        unavailable={unavailable}
+        unavailable={unavailable || takenByOther}
+        unavailableReason={
+          takenByOther ? "Another crew is already on this one" : "This site is no longer available"
+        }
         maxVolume={listing.maxVolumeM3 ? `${Number(listing.maxVolumeM3)} m³` : "any amount"}
         excludes={listing.excludes.map(
           (e) => EXCLUSION_LABELS[e as Exclusion]?.label.replace(/^No /, "") ?? e,

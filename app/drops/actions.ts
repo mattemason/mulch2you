@@ -4,9 +4,9 @@ import { randomBytes } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { drops, listings, users } from "@/lib/db/schema";
+import { drops, listings, supplierProfiles, users } from "@/lib/db/schema";
 import { getCurrentUser, isApprovedSupplier } from "@/lib/session";
 import { ImageError, processUploadedImage } from "@/lib/images";
 import { newKey, putObject } from "@/lib/storage";
@@ -16,7 +16,12 @@ import {
   ETA_WINDOW_KEYS,
   type EtaWindowKey,
 } from "@/lib/listing-options";
-import { sendDropCancelledEmail, sendDropOfferEmail } from "@/lib/email";
+import {
+  sendDropCancelledEmail,
+  sendDropOfferEmail,
+  sendOfferAcceptedEmail,
+} from "@/lib/email";
+import { formatAuMobile } from "@/lib/phone";
 import { env } from "@/lib/env";
 
 export type ClaimResult = { dropId?: string; error?: string };
@@ -46,6 +51,13 @@ export async function claimListing(listingId: string): Promise<ClaimResult> {
   if (!listing.preAuthorised) {
     return { error: "This one needs the gardener's approval first." };
   }
+
+  const [held] = await db
+    .select({ id: drops.id })
+    .from(drops)
+    .where(and(eq(drops.listingId, listingId), inArray(drops.status, ["accepted", "offered"])))
+    .limit(1);
+  if (held) return { error: "Another crew got to this one first." };
 
   const expiresAt = new Date(Date.now() + CLAIM_WINDOW_HOURS * 3600_000);
   const [drop] = await db
@@ -173,18 +185,19 @@ export async function offerDrop(
 
   // One live request per crew per pin, so a driver tapping twice doesn't send
   // the gardener two emails about the same load.
-  const [existing] = await db
-    .select({ id: drops.id })
+  const [held] = await db
+    .select({ id: drops.id, supplierId: drops.supplierId })
     .from(drops)
-    .where(
-      and(
-        eq(drops.listingId, listingId),
-        eq(drops.supplierId, user.id),
-        eq(drops.status, "offered"),
-      ),
-    )
+    .where(and(eq(drops.listingId, listingId), inArray(drops.status, ["accepted", "offered"])))
     .limit(1);
-  if (existing) return { error: "You've already asked about this one — they haven't replied yet." };
+  if (held) {
+    return {
+      error:
+        held.supplierId === user.id
+          ? "You've already asked about this one — they haven't replied yet."
+          : "Another crew is already on this one.",
+    };
+  }
 
   // The token is the credential, so it's random rather than derived, stored
   // rather than signed, and cleared the moment it's used.
@@ -269,6 +282,45 @@ export async function respondToOffer(
       acceptToken: null,
     })
     .where(eq(drops.id, row.drop.id));
+
+  // A yes is useless to the crew if nobody tells them. This is the moment the
+  // address is released, so it's also the moment they can act on it.
+  if (answer === "accept") {
+    const [crew] = await db
+      .select({
+        email: users.email,
+        businessName: supplierProfiles.businessName,
+      })
+      .from(users)
+      .leftJoin(supplierProfiles, eq(supplierProfiles.userId, users.id))
+      .where(eq(users.id, row.drop.supplierId))
+      .limit(1);
+
+    const [owner] = await db
+      .select({ name: users.name, phone: users.phone })
+      .from(users)
+      .where(eq(users.id, row.listing.userId))
+      .limit(1);
+
+    if (crew?.email) {
+      try {
+        await sendOfferAcceptedEmail({
+          to: crew.email,
+          businessName: crew.businessName,
+          addressLine: row.listing.addressLine,
+          suburb: row.listing.suburb,
+          state: row.listing.state,
+          postcode: row.listing.postcode,
+          gardenerName: owner?.name ?? null,
+          gardenerPhone: owner?.phone ? formatAuMobile(owner.phone) : null,
+          dropUrl: `${await siteUrl()}/drops/${row.drop.id}`,
+        });
+      } catch (err) {
+        // The acceptance stands — it's on their dashboard either way.
+        console.error("acceptance email failed", err);
+      }
+    }
+  }
 
   revalidatePath("/dashboard");
   return { ok: answer === "accept" ? "accepted" : "declined" };

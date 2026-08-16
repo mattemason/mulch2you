@@ -20,6 +20,7 @@ export function ClaimBar({
   listingId,
   preAuthorised,
   unavailable,
+  unavailableReason,
   maxVolume,
   excludes,
   dropSpot,
@@ -28,6 +29,7 @@ export function ClaimBar({
   listingId: string;
   preAuthorised: boolean;
   unavailable: boolean;
+  unavailableReason: string;
   maxVolume: string;
   excludes: string[];
   dropSpot: string;
@@ -62,7 +64,7 @@ export function ClaimBar({
       <div className="actionbar">
         <div className="actionbar-in">
           <button className="btn btn-ghost btn-block" disabled>
-            This site is no longer available
+            {unavailableReason}
           </button>
         </div>
       </div>

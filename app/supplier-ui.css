@@ -1152,3 +1152,9 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* A pin another crew already holds. */
+.m2y .badge--pending {
+  background: #eceee8;
+  color: #5f6a58;
+}

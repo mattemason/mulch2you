@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { signOut } from "@/auth";
 import { db } from "@/lib/db";
-import { listings } from "@/lib/db/schema";
+import { drops, listings } from "@/lib/db/schema";
 import { getCurrentUser, isAdmin, isApprovedSupplier } from "@/lib/session";
 import { Wordmark } from "@/app/logo";
 import { MATERIALS_WANTED, VOLUME_TIERS } from "@/lib/listing-options";
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         </h1>
 
         {user.role === "supplier" ? (
-          <SupplierPanel approved={isApprovedSupplier(user)} />
+          <SupplierPanel approved={isApprovedSupplier(user)} userId={user.id} />
         ) : (
           <ReceiverPanel userId={user.id} />
         )}
@@ -113,7 +113,7 @@ async function ReceiverPanel({ userId }: { userId: string }) {
   );
 }
 
-function SupplierPanel({ approved }: { approved: boolean }) {
+async function SupplierPanel({ approved, userId }: { approved: boolean; userId: string }) {
   if (!approved) {
     return (
       <div className="card mt-6">
@@ -128,15 +128,62 @@ function SupplierPanel({ approved }: { approved: boolean }) {
     );
   }
 
+  // Anything still open, newest first. A driver holding a claim needs to see it
+  // the moment they open the app — it's the thing with a clock on it.
+  const openDrops = await db
+    .select({ drop: drops, listing: listings })
+    .from(drops)
+    .innerJoin(listings, eq(listings.id, drops.listingId))
+    .where(and(eq(drops.supplierId, userId), inArray(drops.status, ["accepted", "offered"])))
+    .orderBy(desc(drops.createdAt));
+
   return (
-    <div className="card mt-6">
-      <h2 className="font-semibold">Got a full truck?</h2>
-      <p className="mt-1 text-sm text-muted">
-        Open the map to see who wants chip near your current job.
-      </p>
-      <Link href="/map" className="btn-primary mt-5">
-        Find a drop nearby
-      </Link>
-    </div>
+    <>
+      {openDrops.length > 0 && (
+        <section className="mt-6">
+          <h2 className="font-semibold">On the go</h2>
+          <ul className="mt-3 space-y-3">
+            {openDrops.map(({ drop, listing }) => (
+              <li key={drop.id}>
+                <Link
+                  href={`/drops/${drop.id}`}
+                  className="card flex items-center justify-between gap-4 transition-colors hover:border-brand"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium">
+                      {drop.status === "accepted"
+                        ? `${listing.addressLine}, ${listing.suburb}`
+                        : `${listing.suburb} ${listing.state}`}
+                    </div>
+                    <div className="mt-0.5 text-sm text-muted">
+                      {drop.status === "accepted"
+                        ? "Claimed — tip it and add a photo"
+                        : "Waiting on the gardener to say yes"}
+                      {" · "}
+                      {VOLUME_TIERS[listing.tier].label}
+                    </div>
+                  </div>
+                  <span aria-hidden className="shrink-0 text-brand">
+                    →
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="card mt-6">
+        <h2 className="font-semibold">
+          {openDrops.length > 0 ? "Room for another?" : "Got a full truck?"}
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Open the map to see who wants chip near your current job.
+        </p>
+        <Link href="/map" className="btn-primary mt-5">
+          Find a drop nearby
+        </Link>
+      </div>
+    </>
   );
 }

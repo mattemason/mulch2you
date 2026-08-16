@@ -33,6 +33,8 @@ setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 /** Inline so markers never depend on the CSS build having emitted a utility. */
 const PIN_NOW = "#E8631A";
 const PIN_OPEN = "#2E7D22";
+/** Held by another crew — visible, but plainly not on offer. */
+const PIN_PENDING = "#9AA491";
 
 type Filters = { radiusKm: number; now: boolean; full: boolean; unlimited: boolean };
 const DEFAULT_FILTERS: Filters = { radiusKm: 25, now: false, full: false, unlimited: false };
@@ -192,7 +194,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       const el = document.createElement("button");
       el.type = "button";
       el.setAttribute("aria-label", `${VOLUME_TIERS[l.tier].label} in ${l.suburb}`);
-      const colour = l.preAuthorised ? PIN_NOW : PIN_OPEN;
+      const colour = l.pending ? PIN_PENDING : l.preAuthorised ? PIN_NOW : PIN_OPEN;
       const cap = l.maxVolumeM3 ? Math.round(Number(l.maxVolumeM3)) : "∞";
       el.innerHTML =
         `<span style="position:relative;display:block;width:44px;height:52px;` +
@@ -456,7 +458,9 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
 function Badges({ listing }: { listing: NearbyListing }) {
   return (
     <div className="badges">
-      {listing.preAuthorised ? (
+      {listing.pending ? (
+        <span className="badge badge--pending">Pending delivery</span>
+      ) : listing.preAuthorised ? (
         <span className="badge badge--now">
           <Icon.bolt size={10} /> Drop now
         </span>
@@ -558,9 +562,15 @@ function Preview({
         </span>
       </div>
       <div className="preview-actions">
-        <Link className="btn btn-green btn-block" href={href}>
-          View site <Icon.arrow />
-        </Link>
+        {listing.pending ? (
+          <button type="button" className="btn btn-ghost btn-block" disabled>
+            Another crew has this one
+          </button>
+        ) : (
+          <Link className="btn btn-green btn-block" href={href}>
+            View site <Icon.arrow />
+          </Link>
+        )}
       </div>
     </div>
   );
