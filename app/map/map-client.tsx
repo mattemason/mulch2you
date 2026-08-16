@@ -17,6 +17,7 @@ import {
   type Exclusion,
 } from "@/lib/listing-options";
 import { Icon } from "./icons";
+import { LocationPicker } from "./location-picker";
 
 /** Sydney GPO — only if the browser won't or can't give up a location. */
 const FALLBACK_CENTRE: Coords = { lat: -33.8688, lng: 151.2093 };
@@ -44,6 +45,13 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const [view, setView] = useState<"map" | "list">("map");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [canResearch, setCanResearch] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  /**
+   * What to call the search centre. Coordinates are meaningless to a driver,
+   * and reverse-geocoding the GPS fix would be a paid call to answer a
+   * question nobody asked — "My location" says everything useful.
+   */
+  const [centreLabel, setCentreLabel] = useState<string | null>(null);
 
   const locating = centre === null;
   const effectiveCentre = centre ?? FALLBACK_CENTRE;
@@ -85,8 +93,10 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   }, []);
 
   const applyCentre = useCallback(
-    (next: Coords, fly = true) => {
+    (next: Coords, label: string | null = null, fly = true) => {
       setCentre(next);
+      setCentreLabel(label);
+      setSelectedId(null);
       if (fly) mapRef.current?.easeTo({ center: [next.lng, next.lat], zoom: 11 });
       void search(next, filters);
     },
@@ -105,12 +115,12 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   /* --- locate the truck ---------------------------------------------------- */
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (requestSeq.current === 0) applyCentre(FALLBACK_CENTRE);
+      if (requestSeq.current === 0) applyCentre(FALLBACK_CENTRE, "Sydney (couldn't locate you)");
     }, LOCATE_TIMEOUT_MS);
 
     navigator.geolocation?.getCurrentPosition(
-      (pos) => applyCentre({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => applyCentre(FALLBACK_CENTRE),
+      (pos) => applyCentre({ lat: pos.coords.latitude, lng: pos.coords.longitude }, "My location"),
+      () => applyCentre(FALLBACK_CENTRE, "Sydney (couldn't locate you)"),
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
     );
     return () => clearTimeout(timer);
@@ -219,17 +229,29 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
           <Link href="/dashboard" className="icon-btn" aria-label="Back to dashboard">
             <Icon.back />
           </Link>
-          <div className="appbar-loc">
+          <button className="appbar-loc" onClick={() => setPickerOpen(true)}>
             <div className="lbl">Searching around</div>
             <div className="val">
               <Icon.pin />
               <span className="txt">
-                {locating
-                  ? "Finding you…"
-                  : `${effectiveCentre.lat.toFixed(3)}, ${effectiveCentre.lng.toFixed(3)}`}
+                {locating ? "Finding you…" : (centreLabel ?? "My location")}
               </span>
+              <svg
+                className="chev"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
             </div>
-          </div>
+          </button>
           <div className="seg" role="group" aria-label="Map or list">
             <button aria-pressed={!listMode} onClick={() => setView("map")}>
               <Icon.mapOn /> Map
@@ -365,7 +387,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
             onClick={() => {
               const c = mapRef.current?.getCenter();
               setCanResearch(false);
-              if (c) applyCentre({ lat: c.lat, lng: c.lng }, false);
+              if (c) applyCentre({ lat: c.lat, lng: c.lng }, "this area", false);
             }}
           >
             <Icon.refresh /> Search this area
@@ -384,13 +406,31 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
             aria-label="Centre on me"
             onClick={() =>
               navigator.geolocation?.getCurrentPosition((p) =>
-                applyCentre({ lat: p.coords.latitude, lng: p.coords.longitude }),
+                applyCentre({ lat: p.coords.latitude, lng: p.coords.longitude }, "My location"),
               )
             }
           >
             <Icon.locate />
           </button>
         </div>
+
+        {pickerOpen && (
+          <LocationPicker
+            label={locating ? "finding you" : (centreLabel ?? "my location")}
+            onPick={(at, label) => {
+              setPickerOpen(false);
+              applyCentre(at, label);
+            }}
+            onUseGps={() => {
+              setPickerOpen(false);
+              navigator.geolocation?.getCurrentPosition(
+                (p) => applyCentre({ lat: p.coords.latitude, lng: p.coords.longitude }, "My location"),
+                () => applyCentre(FALLBACK_CENTRE, "Sydney (couldn't locate you)"),
+              );
+            }}
+            onClose={() => setPickerOpen(false)}
+          />
+        )}
 
         {selected && (
           <Preview

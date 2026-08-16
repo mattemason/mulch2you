@@ -1082,3 +1082,56 @@
     animation: none !important;
   }
 }
+
+/* --- location picker ----------------------------------------------------- */
+.m2y .appbar-loc .val svg.chev {
+  color: var(--muted);
+}
+.m2y .place-input {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+}
+.m2y .place-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(46, 125, 34, 0.15);
+}
+.m2y .place-results {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.m2y .place-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  font-weight: 600;
+  color: var(--ink);
+}
+.m2y .place-row:hover {
+  border-color: var(--green);
+  background: var(--green-wash);
+}
+.m2y .place-row svg {
+  color: var(--green);
+  flex: 0 0 auto;
+}
+.m2y .place-empty {
+  padding: 14px 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}

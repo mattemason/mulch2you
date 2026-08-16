@@ -242,6 +242,7 @@ type PhotonFeature = {
     district?: string;
     locality?: string;
     county?: string;
+    type?: string;
     state?: string;
     postcode?: string;
   };
@@ -316,4 +317,112 @@ function fromPhoton(f: PhotonFeature): AddressPrediction | null {
     secondary: `${suburb} ${state} ${p.postcode}`,
     resolved,
   };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Place search — suburbs, towns, postcodes                                   */
+/* -------------------------------------------------------------------------- */
+
+export type PlaceSuggestion = { id: string; label: string; lat: number; lng: number };
+
+/**
+ * Finds a suburb or town to search around.
+ *
+ * Separate from address autocomplete because the shape of a good answer is
+ * different: a delivery address needs a street number and is rejected without
+ * one, whereas "Noosaville" is a perfectly good centre for a radius search.
+ * Coordinates come back directly, so there's no second lookup to pay for.
+ */
+export async function suggestPlaces(query: string): Promise<PlaceSuggestion[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+
+  if (env.GOOGLE_MAPS_KEY) {
+    try {
+      return await googlePlaces(q, env.GOOGLE_MAPS_KEY);
+    } catch (err) {
+      console.error("Google place search failed, falling back to Photon:", err);
+    }
+  }
+  return photonPlaces(q);
+}
+
+async function googlePlaces(query: string, key: string): Promise<PlaceSuggestion[]> {
+  // The Geocoding API rather than Places: a suburb name is a complete query,
+  // and this answers with coordinates in one call instead of two.
+  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  url.searchParams.set("address", query);
+  url.searchParams.set("components", "country:AU");
+  url.searchParams.set("key", key);
+
+  const res = await fetch(url, { cache: "no-store" });
+  const data = (await res.json()) as {
+    status: string;
+    error_message?: string;
+    results?: {
+      place_id: string;
+      formatted_address: string;
+      geometry: { location: { lat: number; lng: number } };
+    }[];
+  };
+
+  if (data.status === "ZERO_RESULTS") return [];
+  if (!res.ok || data.status !== "OK") {
+    throw new GeocodeError(
+      explainGoogleFailure(res.status),
+      res.status,
+      data.error_message ?? data.status,
+    );
+  }
+
+  return (data.results ?? []).slice(0, 6).map((r) => ({
+    id: r.place_id,
+    label: r.formatted_address.replace(/, Australia$/, ""),
+    lat: r.geometry.location.lat,
+    lng: r.geometry.location.lng,
+  }));
+}
+
+async function photonPlaces(query: string): Promise<PlaceSuggestion[]> {
+  const url = new URL("https://photon.komoot.io/api/");
+  url.searchParams.set("q", query);
+  url.searchParams.set("limit", "10");
+  url.searchParams.set("bbox", AU_BBOX);
+  url.searchParams.set("lang", "en");
+  // Suburbs and towns only — a street or a shop is not somewhere to centre on.
+  for (const layer of ["city", "district", "locality", "county"]) {
+    url.searchParams.append("layer", layer);
+  }
+
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mulch2You/0.1 (+https://github.com/mattemason/mulch2you)" },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Photon failed: ${res.status}`);
+
+  const data = (await res.json()) as { features?: PhotonFeature[] };
+  const seen = new Set<string>();
+
+  return (data.features ?? [])
+    .filter((f) => f.properties.countrycode === "AU")
+    .map((f) => {
+      const p = f.properties;
+      const name = p.name ?? p.city ?? p.locality;
+      if (!name) return null;
+      const state = AU_STATE_ABBREV[p.state ?? ""] ?? p.state ?? "";
+      const label = [name, state, p.postcode].filter(Boolean).join(" ");
+      return {
+        id: label.toLowerCase(),
+        label,
+        lng: f.geometry.coordinates[0],
+        lat: f.geometry.coordinates[1],
+      };
+    })
+    .filter((p): p is PlaceSuggestion => p !== null)
+    .filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    })
+    .slice(0, 6);
 }
