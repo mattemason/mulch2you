@@ -12,6 +12,7 @@ import {
   type DropSpotKey,
 } from "@/lib/listing-options";
 import { CompleteDropForm } from "./complete-form";
+import { CancelClaim } from "./cancel-claim";
 
 export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
   const user = await getCurrentUser();
@@ -53,14 +54,14 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
 
       <div className="mx-auto max-w-2xl px-6 py-10">
         <div className="text-xs font-medium uppercase tracking-wide text-muted">
-          {done ? "Delivered" : "Claimed — go now"}
+          {done ? "Delivered" : drop.status === "offered" ? "Waiting on the gardener" : drop.status === "cancelled" ? "Claim released" : "Claimed — go now"}
         </div>
         <h1 className="mt-1 text-2xl font-semibold">
           {isSupplier ? `${listing.suburb} ${listing.state}` : "Your mulch delivery"}
         </h1>
 
         {/* Contact details, released because the drop is accepted ------------ */}
-        {isSupplier && (
+        {isSupplier && drop.status !== "offered" && (
           <div className="card mt-6">
             <div className="text-xs text-muted">Deliver to</div>
             <div className="mt-1 text-lg font-medium">
@@ -149,6 +150,7 @@ export default async function DropPage({ params }: PageProps<"/drops/[id]">) {
               the gardener is billed against.
             </p>
             <CompleteDropForm dropId={drop.id} />
+            <CancelClaim dropId={drop.id} />
           </div>
         ) : (
           <p className="mt-8 border-t border-border pt-8 text-sm text-muted">

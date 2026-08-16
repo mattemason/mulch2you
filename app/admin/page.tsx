@@ -5,6 +5,7 @@ import { drops, listings, supplierProfiles, users } from "@/lib/db/schema";
 import { geocoderName } from "@/lib/geocode";
 import { env } from "@/lib/env";
 import { Diagnostics } from "./diagnostics";
+import { testGeocoder } from "./actions";
 
 type Tally = { key: string | null; n: number };
 
@@ -30,6 +31,11 @@ export default async function AdminOverviewPage() {
 
   const pending = tally(supplierRows, "pending");
 
+  // Probed on load rather than behind a button: address lookup has been
+  // quietly falling back for days, and a warning nobody clicks for is a
+  // warning nobody sees.
+  const geocoder = await testGeocoder();
+
   return (
     <>
       <h1 className="text-2xl font-semibold">Overview</h1>
@@ -53,6 +59,24 @@ export default async function AdminOverviewPage() {
         </Link>
       )}
 
+      {!geocoder.ok && (
+        <div className="card mt-6 border-accent">
+          <div className="font-medium text-accent">
+            Address lookup is failing — {geocoder.provider} isn&apos;t answering
+          </div>
+          <p className="mt-1 text-sm text-muted">{geocoder.summary}</p>
+          {geocoder.detail && (
+            <pre className="mt-3 overflow-x-auto rounded-lg border border-border bg-background p-3 text-xs">
+              {geocoder.detail}
+            </pre>
+          )}
+          <p className="mt-3 text-sm text-muted">
+            Listings still work — lookups fall back to Photon, which is free but
+            weaker on unit numbers and new estates.
+          </p>
+        </div>
+      )}
+
       <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Gardeners" value={tally(userRows, "receiver")} />
         <Stat label="Tree services" value={tally(userRows, "supplier")} hint={`${tally(supplierRows, "approved")} approved`} />
@@ -74,7 +98,7 @@ export default async function AdminOverviewPage() {
         <dl className="card mt-3 space-y-2 text-sm">
           <Row label="Address lookup">{geocoderName()}</Row>
           <Row label="Map tiles">
-            {env.MAPTILER_KEY ? "MapTiler" : "OpenStreetMap raster — not licensed for production"}
+            {env.MAPTILER_KEY ? "MapTiler" : "OpenFreeMap — free, no key needed"}
           </Row>
           <Row label="Outbound email">
             {env.POSTMARK_SERVER_TOKEN ? `Postmark, from ${env.EMAIL_FROM}` : "Not configured"}

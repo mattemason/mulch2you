@@ -142,3 +142,78 @@ export async function sendDropOfferEmail({
     `),
   });
 }
+
+export async function sendDropCancelledEmail({
+  to,
+  gardenerName,
+  businessName,
+  suburb,
+  reason,
+}: {
+  to: string;
+  gardenerName: string | null;
+  businessName: string;
+  suburb: string;
+  reason: string | null;
+}) {
+  const greeting = gardenerName ? `G'day ${gardenerName.split(" ")[0]},` : "G'day,";
+  await sendEmail({
+    to,
+    subject: `${businessName} can't make the drop after all`,
+    text:
+      `${greeting}\n\n${businessName} has released the claim on your ${suburb} listing, so no truck is coming.` +
+      `${reason ? `\n\nThey said: ${reason}` : ""}\n\n` +
+      `Your pin is back on the map and other crews can see it. Nothing has been charged.`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">That drop isn't happening</h1>
+      <p style="margin:0 0 8px;color:#44544a;">${greeting}</p>
+      <p style="margin:0 0 16px;color:#44544a;">
+        <strong>${businessName}</strong> has released the claim on your ${suburb}
+        listing, so no truck is coming.
+      </p>
+      ${reason ? `<p style="margin:0 0 16px;padding:12px 14px;background:#f6f7f4;border-radius:8px;color:#44544a;">"${reason}"</p>` : ""}
+      <p style="margin:0;color:#44544a;">
+        Your pin is back on the map for other crews, and nothing has been charged.
+      </p>
+    `),
+  });
+}
+
+export async function sendDeliveryReminderEmail({
+  to,
+  businessName,
+  suburb,
+  addressLine,
+  claimedAt,
+  dropUrl,
+}: {
+  to: string;
+  businessName: string | null;
+  suburb: string;
+  addressLine: string;
+  claimedAt: Date;
+  dropUrl: string;
+}) {
+  const when = claimedAt.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
+  await sendEmail({
+    to,
+    subject: `Did you drop that load at ${suburb}?`,
+    text:
+      `You claimed ${addressLine}, ${suburb} on ${when} and haven't closed it off.\n\n` +
+      `If you've tipped it, add a photo to finish the job: ${dropUrl}\n\n` +
+      `If you're not going, cancel the claim on the same page so someone else can take it.`,
+    html: layout(`
+      <h1 style="margin:0 0 16px;font-size:22px;color:#1c1f1b;">Still holding a drop</h1>
+      <p style="margin:0 0 16px;color:#44544a;">
+        ${businessName ? `${businessName} claimed` : "You claimed"} ${addressLine},
+        ${suburb} on ${when} and it hasn't been closed off.
+      </p>
+      <p style="margin:0 0 24px;color:#44544a;">
+        Tipped it already? Add a photo to finish the job. Not going? Cancel the
+        claim on the same page so another crew can take it — the gardener is
+        still waiting on a truck either way.
+      </p>
+      ${button(dropUrl, "Open the drop")}
+    `),
+  });
+}

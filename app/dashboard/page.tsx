@@ -18,6 +18,10 @@ export default async function DashboardPage() {
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Wordmark className="h-7" priority />
+          <div className="flex items-center gap-4">
+          <Link href="/profile" className="text-sm text-muted hover:text-foreground">
+            Profile
+          </Link>
           <form
             action={async () => {
               "use server";
@@ -28,6 +32,7 @@ export default async function DashboardPage() {
               Sign out
             </button>
           </form>
+          </div>
         </div>
       </header>
 

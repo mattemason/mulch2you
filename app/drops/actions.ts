@@ -16,7 +16,7 @@ import {
   ETA_WINDOW_KEYS,
   type EtaWindowKey,
 } from "@/lib/listing-options";
-import { sendDropOfferEmail } from "@/lib/email";
+import { sendDropCancelledEmail, sendDropOfferEmail } from "@/lib/email";
 import { env } from "@/lib/env";
 
 export type ClaimResult = { dropId?: string; error?: string };
@@ -284,4 +284,73 @@ async function siteUrl(): Promise<string> {
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
+}
+
+/* -------------------------------------------------------------------------- */
+
+export type CancelState = { error?: string; ok?: boolean };
+
+/**
+ * Releases a claim.
+ *
+ * Needed because a claim currently has only one exit — delivering it. A crew
+ * whose truck filled elsewhere, or who got there and found the driveway
+ * impassable, would otherwise sit on a pin nobody else can take until it
+ * expires. Better they hand it back deliberately, and better the gardener
+ * hears rather than waits for a truck that isn't coming.
+ */
+export async function cancelDrop(
+  dropId: string,
+  _prev: CancelState,
+  formData: FormData,
+): Promise<CancelState> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/signin");
+
+  const [row] = await db
+    .select({ drop: drops, listing: listings, ownerEmail: users.email, ownerName: users.name })
+    .from(drops)
+    .innerJoin(listings, eq(listings.id, drops.listingId))
+    .innerJoin(users, eq(users.id, listings.userId))
+    .where(and(eq(drops.id, dropId), eq(drops.supplierId, user.id)))
+    .limit(1);
+
+  if (!row) return { error: "We couldn't find that drop." };
+  if (row.drop.status === "completed") {
+    return { error: "This one's already delivered — nothing to cancel." };
+  }
+  if (row.drop.status !== "accepted" && row.drop.status !== "offered") {
+    return { error: "This drop isn't active." };
+  }
+
+  const reason = formData.get("reason");
+  await db
+    .update(drops)
+    .set({
+      status: "cancelled",
+      cancelledReason:
+        typeof reason === "string" && reason.trim() ? reason.trim().slice(0, 300) : null,
+      // Spend any outstanding token so an emailed link can't revive it.
+      acceptToken: null,
+    })
+    .where(eq(drops.id, dropId));
+
+  // Only worth telling them if they were expecting a truck.
+  if (row.drop.status === "accepted" && row.ownerEmail) {
+    try {
+      await sendDropCancelledEmail({
+        to: row.ownerEmail,
+        gardenerName: row.ownerName,
+        businessName: user.supplierProfile?.businessName ?? user.name ?? "The tree service",
+        suburb: row.listing.suburb,
+        reason: typeof reason === "string" && reason.trim() ? reason.trim() : null,
+      });
+    } catch (err) {
+      console.error("cancellation email failed", err);
+    }
+  }
+
+  revalidatePath(`/drops/${dropId}`);
+  revalidatePath("/dashboard");
+  return { ok: true };
 }

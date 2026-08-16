@@ -244,6 +244,14 @@ export const drops = pgTable(
     acceptToken: text("accept_token").unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     respondedAt: timestamp("responded_at", { withTimezone: true }),
+    /**
+     * Set when we've nudged the driver about a claim they haven't closed off.
+     * Recorded so the reminder goes once — a crew mid-job doesn't need the
+     * same email every time the cron runs.
+     */
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
+    /** Free text when a driver releases a claim, so patterns are visible later. */
+    cancelledReason: text("cancelled_reason"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

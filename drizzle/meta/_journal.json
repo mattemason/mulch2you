@@ -43,6 +43,13 @@
       "when": 1786828632392,
       "tag": "0005_add_material_wanted",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786846043824,
+      "tag": "0006_drop_reminders",
+      "breakpoints": true
     }
   ]
 }
