@@ -1,4 +1,4 @@
-import { and, eq, isNull, or, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { drops, listings, supplierProfiles } from "./schema";
 import { boundingBox, type Coords } from "@/lib/geo";
@@ -26,10 +26,16 @@ export type NearbyListing = {
 
 export type NearbyOptions = {
   radiusKm?: number;
-  /** Only pins that will take at least this much — filters out the 1 m³ pots. */
-  minCapacityM3?: number;
   /** Only one-tap-claim pins, for a driver with a full truck right now. */
   preAuthorisedOnly?: boolean;
+  /**
+   * Filters mirror the choices a gardener actually makes when listing, so a
+   * driver can search on the same terms rather than a translation of them.
+   */
+  tier?: "small" | "medium" | "large" | "unlimited";
+  wanted?: "wood_chips" | "mulch_and_chips" | "any_green_waste";
+  /** Hide pins another crew already holds. */
+  excludePending?: boolean;
   limit?: number;
 };
 
@@ -51,16 +57,21 @@ export async function findNearbyListings(
   // in scripts/verify-geo.ts. Production always uses the shared pool.
   database: typeof db = db,
 ): Promise<NearbyListing[]> {
-  const { radiusKm = 25, minCapacityM3, preAuthorisedOnly = false, limit = 200 } = opts;
+  const { radiusKm = 25, preAuthorisedOnly = false, tier, wanted, excludePending = false, limit = 200 } = opts;
   const box = boundingBox(origin, radiusKm);
 
   // A pin someone already holds stays visible but unclaimable — vanishing pins
   // make a driver wonder whether the app is broken, and "taken" is useful
-  // information when you're deciding where to run next.
+  // information when deciding where to run next.
+  //
+  // Table and column names are written out, with the inner table aliased,
+  // because Drizzle interpolates `${listings.id}` into a raw fragment as a
+  // bare "id" — and drops has an id of its own, so the correlation silently
+  // became drops.listing_id = drops.id and matched nothing.
   const pending = sql<boolean>`exists (
-    select 1 from ${drops}
-    where ${drops.listingId} = ${listings.id}
-      and ${drops.status} in ('accepted', 'offered')
+    select 1 from "drops" pd
+    where pd."listing_id" = "listings"."id"
+      and pd."status" in ('accepted', 'offered')
   )`;
 
   const distance = sql<number>`
@@ -97,13 +108,9 @@ export async function findNearbyListings(
         sql`${listings.approxLat} between ${box.minLat} and ${box.maxLat}`,
         sql`${listings.approxLng} between ${box.minLng} and ${box.maxLng}`,
         preAuthorisedOnly ? eq(listings.preAuthorised, true) : undefined,
-        // A null max means unlimited (community gardens, farms) and always qualifies.
-        minCapacityM3 !== undefined
-          ? or(
-              isNull(listings.maxVolumeM3),
-              sql`${listings.maxVolumeM3} >= ${minCapacityM3}`,
-            )
-          : undefined,
+        tier ? eq(listings.tier, tier) : undefined,
+        wanted ? eq(listings.wanted, wanted) : undefined,
+        excludePending ? sql`not ${pending}` : undefined,
       ),
     )
     .orderBy(distance)

@@ -11,9 +11,13 @@ import { listingRef } from "@/lib/refs";
 import {
   EXCLUSION_LABELS,
   MATERIALS_WANTED,
+  MATERIAL_WANTED_KEYS,
   VOLUME_TIERS,
+  VOLUME_TIER_KEYS,
   tipsPhrase,
   type Exclusion,
+  type MaterialWantedKey,
+  type VolumeTierKey,
 } from "@/lib/listing-options";
 import { Icon } from "./icons";
 import { LocationPicker } from "./location-picker";
@@ -36,8 +40,26 @@ const PIN_OPEN = "#2E7D22";
 /** Held by another crew — visible, but plainly not on offer. */
 const PIN_PENDING = "#9AA491";
 
-type Filters = { radiusKm: number; now: boolean; full: boolean; unlimited: boolean };
-const DEFAULT_FILTERS: Filters = { radiusKm: 25, now: false, full: false, unlimited: false };
+/**
+ * Deliberately the same axes a gardener fills in when listing — load size and
+ * what they want — so a driver searches on the terms the data was entered in
+ * rather than a translation of them.
+ */
+type Filters = {
+  radiusKm: number;
+  now: boolean;
+  hideTaken: boolean;
+  tier: "" | VolumeTierKey;
+  wanted: "" | MaterialWantedKey;
+};
+
+const DEFAULT_FILTERS: Filters = {
+  radiusKm: 25,
+  now: false,
+  hideTaken: false,
+  tier: "",
+  wanted: "",
+};
 
 export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -80,7 +102,9 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       radiusKm: String(f.radiusKm),
     });
     if (f.now) params.set("preAuthorisedOnly", "true");
-    if (f.full) params.set("minCapacityM3", "10");
+    if (f.hideTaken) params.set("excludePending", "true");
+    if (f.tier) params.set("tier", f.tier);
+    if (f.wanted) params.set("wanted", f.wanted);
 
     try {
       const res = await fetch(`/api/listings/nearby?${params}`);
@@ -92,9 +116,7 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
       }
       const data = (await res.json()) as { listings: NearbyListing[] };
       if (seq !== requestSeq.current) return;
-      // "Send everything" is one tier value, so it narrows here rather than
-      // earning its own query parameter for a single equality check.
-      setListings(f.unlimited ? data.listings.filter((l) => l.tier === "unlimited") : data.listings);
+      setListings(data.listings);
       setError(null);
     } catch {
       if (seq === requestSeq.current) setError("Couldn't load sites — check your signal");
@@ -285,20 +307,45 @@ export function SupplierMap({ maptilerKey }: { maptilerKey: string | null }) {
             </button>
             <button
               className="fchip"
-              aria-pressed={filters.full}
-              onClick={() => applyFilters({ ...filters, full: !filters.full, unlimited: false })}
+              aria-pressed={filters.hideTaken}
+              onClick={() => applyFilters({ ...filters, hideTaken: !filters.hideTaken })}
             >
-              Full truck
+              Hide taken
             </button>
-            <button
-              className="fchip"
-              aria-pressed={filters.unlimited}
-              onClick={() =>
-                applyFilters({ ...filters, unlimited: !filters.unlimited, full: false })
-              }
-            >
-              Send everything
-            </button>
+            <label className="fchip fchip--select">
+              <Icon.truck />
+              <select
+                value={filters.tier}
+                aria-label="Load size"
+                onChange={(e) =>
+                  applyFilters({ ...filters, tier: e.target.value as Filters["tier"] })
+                }
+              >
+                <option value="">Any size</option>
+                {VOLUME_TIER_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {VOLUME_TIERS[k].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="fchip fchip--select">
+              <Icon.leaf />
+              <select
+                value={filters.wanted}
+                aria-label="What they want"
+                onChange={(e) =>
+                  applyFilters({ ...filters, wanted: e.target.value as Filters["wanted"] })
+                }
+              >
+                <option value="">Any material</option>
+                {MATERIAL_WANTED_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {MATERIALS_WANTED[k].label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="fchip fchip--select">
               <Icon.pin />
               <select

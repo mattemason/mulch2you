@@ -9,11 +9,12 @@
  * SQL generation, that the bounding box doesn't clip real neighbours, and that
  * the query never selects a column we've promised not to expose.
  */
+import { eq } from "drizzle-orm";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { listings, users } from "../lib/db/schema";
+import { drops, listings, users } from "../lib/db/schema";
 import { findNearbyListings } from "../lib/db/queries";
 import { fuzzCoords, haversineKm } from "../lib/geo";
 import type { db as ProdDb } from "../lib/db";
@@ -122,15 +123,59 @@ async function main() {
   const instant = await findNearbyListings(KATOOMBA, { radiusKm: 25, preAuthorisedOnly: true }, database);
   check("instant-claim filter", instant.length === 1 && instant[0].preAuthorised, `${instant.length} pin(s)`);
 
-  const fullTruck = await findNearbyListings(KATOOMBA, { radiusKm: 50, minCapacityM3: 10 }, database);
+  const unlimited = await findNearbyListings(KATOOMBA, { radiusKm: 50, tier: "unlimited" }, database);
+  check("tier filter keeps matching pins", unlimited.some((l) => l.suburb === "Penrith"));
   check(
-    "full-truck filter keeps unlimited pins",
-    fullTruck.some((l) => l.suburb === "Penrith"),
+    "tier filter drops the rest",
+    unlimited.every((l) => l.tier === "unlimited"),
+    unlimited.map((l) => l.suburb).join(", ") || "none",
   );
+
+  const chipsOnly = await findNearbyListings(KATOOMBA, { radiusKm: 50, wanted: "any_green_waste" }, database);
+  check("material filter excludes non-matching pins", chipsOnly.length === 0, `${chipsOnly.length} pin(s)`);
+
+  // --- claimed pins ------------------------------------------------------
+  console.log("\nClaimed pins:");
+  const [supplier] = await database
+    .insert(users)
+    .values({ name: "Test Crew", email: "crew@example.com", role: "supplier" })
+    .returning();
+  const [katoomba] = await database
+    .select({ id: listings.id })
+    .from(listings)
+    .where(eq(listings.suburb, "Katoomba"));
+
+  await database.insert(drops).values({
+    listingId: katoomba.id,
+    supplierId: supplier.id,
+    status: "accepted",
+    expiresAt: new Date(Date.now() + 3600_000),
+  });
+
+  const afterClaim = await findNearbyListings(KATOOMBA, { radiusKm: 25 }, database);
+  const claimed = afterClaim.find((l) => l.id === katoomba.id);
+  check("a claimed pin is flagged pending", claimed?.pending === true, String(claimed?.pending));
   check(
-    "full-truck filter drops 6 m³ pins",
-    !fullTruck.some((l) => l.suburb === "Leura"),
-    fullTruck.map((l) => l.suburb).join(", ") || "none",
+    "unclaimed pins are not flagged",
+    afterClaim.filter((l) => l.id !== katoomba.id).every((l) => !l.pending),
+  );
+
+  const hideTaken = await findNearbyListings(KATOOMBA, { radiusKm: 25, excludePending: true }, database);
+  check(
+    "excludePending drops the claimed pin",
+    !hideTaken.some((l) => l.id === katoomba.id),
+    `${hideTaken.length} pin(s) left`,
+  );
+
+  // Releasing it should put the pin straight back in play.
+  await database
+    .update(drops)
+    .set({ status: "cancelled" })
+    .where(eq(drops.listingId, katoomba.id));
+  const afterRelease = await findNearbyListings(KATOOMBA, { radiusKm: 25 }, database);
+  check(
+    "a released claim frees the pin again",
+    afterRelease.find((l) => l.id === katoomba.id)?.pending === false,
   );
 
   // --- the privacy guarantee --------------------------------------------

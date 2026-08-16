@@ -51,11 +51,13 @@ export const VOLUME_TIERS = {
 export const MATERIALS_WANTED = {
   wood_chips: {
     label: "Wood chips",
-    blurb: "Straight arborist chip — branches and limbs through the chipper.",
+    blurb:
+      "Straight arborist chip — branches and limbs through the chipper. It's not screened, so expect leaf and bark mixed through it.",
   },
   mulch_and_chips: {
     label: "Garden mulch + wood chips",
-    blurb: "Chip plus finer material. Better for garden beds, takes longer to arrive.",
+    blurb:
+      "Chip plus finer material, leaf and bark included. Better on garden beds, but a narrower pool of drivers so it takes longer to arrive.",
   },
   any_green_waste: {
     label: "Any green waste",

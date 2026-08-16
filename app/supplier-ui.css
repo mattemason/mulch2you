@@ -763,16 +763,16 @@
 .m2y .photo {
   position: relative;
   background: var(--green-wash);
-  aspect-ratio: 16 / 10;
   overflow: hidden;
   display: grid;
   place-items: center;
   color: var(--green);
-  /* Sits inside a card now rather than spanning the viewport, so it needs its
-     own corners and a ceiling — a 16:10 hero pushed everything useful below
-     the fold on a phone. */
   border-radius: 12px;
-  max-height: 320px;
+  /* Fill the card and cap the height directly. An aspect-ratio combined with
+     max-height sizes the box from its height instead, which left the photo
+     512px wide in a 720px card. */
+  width: 100%;
+  height: clamp(190px, 44vw, 340px);
 }
 .m2y .photo img {
   width: 100%;

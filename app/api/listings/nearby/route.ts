@@ -8,11 +8,16 @@ const querySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   radiusKm: z.coerce.number().min(1).max(100).default(25),
-  minCapacityM3: z.coerce.number().min(0).max(50).optional(),
   preAuthorisedOnly: z
     .string()
     .optional()
     .transform((v) => v === "true"),
+  excludePending: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+  tier: z.enum(["small", "medium", "large", "unlimited"]).optional(),
+  wanted: z.enum(["wood_chips", "mulch_and_chips", "any_green_waste"]).optional(),
 });
 
 /**
@@ -38,12 +43,12 @@ export async function GET(req: Request) {
     return Response.json({ error: "Invalid search area" }, { status: 400 });
   }
 
-  const { lat, lng, radiusKm, minCapacityM3, preAuthorisedOnly } = parsed.data;
+  const { lat, lng, radiusKm, preAuthorisedOnly, excludePending, tier, wanted } = parsed.data;
 
   try {
     const results = await findNearbyListings(
       { lat, lng },
-      { radiusKm, minCapacityM3, preAuthorisedOnly },
+      { radiusKm, preAuthorisedOnly, excludePending, tier, wanted },
     );
     return Response.json({ listings: results });
   } catch (err) {
